@@ -1,0 +1,2 @@
+class KebabException(Exception):
+    pass
