@@ -10,7 +10,7 @@ from typing import List
 import yaml
 
 from kebab.openers import DEFAULT_OPENER
-from kebab.utils import update_recursively, lookup_recursively
+from kebab.utils import update_recursively, lookup_recursively, fill_recursively
 
 _logger = logging.getLogger(__name__)
 _DISABLE_RELOAD = -1
@@ -19,14 +19,13 @@ DEFAULT_URL_ENVVAR = "CONF_URL"
 
 
 class KebabSource(object):
-    def __init__(self, include_envvar=True):
+    def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
         self._last_reload_timestamp = 0  # type: float
         self._reload_lock = threading.RLock()
         self._reload_timer = None
         self._reload_disabled = threading.Event()
         self._cached_context = {}
-        self._include_envvar = include_envvar
 
     def __repr__(self):
         return self.__class__.__name__
@@ -54,14 +53,22 @@ class KebabSource(object):
             except Exception as e:
                 _logger.warning("failed to load source of {}, will skip\n{}".format(source, e))
 
+        _context = self._handle_env_map(_context)
         self._handle_self(_context)
 
-        # environment variable source is always being combined
-        if self._include_envvar:
-            _env_context = EnvVarSource()._load_context()
-            _context = update_recursively(_context, _env_context)
-
         return _context
+
+    def _handle_env_map(self, _context):
+        if '__env_map__' in _context:
+            mapped_src = EnvVarSource(
+                include_env_var=False,
+                env_var_map=_context['__env_map__']
+            )
+            # noinspection PyProtectedMember
+            _env_context = mapped_src._load_context()
+            return update_recursively(_context, _env_context)
+        else:
+            return _context
 
     def _handle_self(self, _context):
         if '__self__' in _context:
@@ -280,11 +287,17 @@ class DictSource(KebabSource):
 
 
 class EnvVarSource(KebabSource):
-    def __init__(self, **kwargs):
+    def __init__(self, include_env_var=False, env_var_map=None, **kwargs):
         super(EnvVarSource, self).__init__(**kwargs)
+        env_vars = dict(os.environ)
+        self._dictionary = env_vars if include_env_var else {}
+        if env_var_map:
+            for env_key, var_key in env_var_map.items():
+                if env_key in env_vars:
+                    fill_recursively(self._dictionary, var_key, env_vars[env_key])
 
     def _load_context(self):
-        return dict(os.environ)
+        return self._dictionary
 
 
 class UnionSource(DictSource):
@@ -342,18 +355,19 @@ class SubSource(KebabSource):
 
 
 def load_source(default_urls='app.yaml', fallback_dict=None, reload_interval_in_secs=_DISABLE_RELOAD,
-                include_envvar=True, url_envvar=DEFAULT_URL_ENVVAR):
+                include_env_var=False, env_var_map=None, url_envvar=DEFAULT_URL_ENVVAR) -> KebabSource:
     """
 
-    :param str|list[str] default_urls:
+    :param str|list[str]|tuple[str] default_urls:
     :param dict fallback_dict:
     :param int reload_interval_in_secs:
-    :param bool include_envvar:
+    :param bool include_env_var:
+    :param dict env_var_map: map Environment Variable key to a hierachical key such as NESTED_KEY -> nested.key
     :param str url_envvar: the environment variable key to load config url
     :return: the kebab source of these urls
     :rtype: KebabSource
     """
-    if default_urls and not isinstance(default_urls, list):
+    if default_urls and not isinstance(default_urls, list) and not isinstance(default_urls, tuple):
         default_urls = default_urls.split(',')
     urls = default_urls or []
 
@@ -362,12 +376,15 @@ def load_source(default_urls='app.yaml', fallback_dict=None, reload_interval_in_
         urls = urls_from_env.split(',')
 
     sources = [
-        UrlSource(url, include_envvar=include_envvar)
+        UrlSource(url)
         for url in urls
     ]  # type: List[KebabSource]
 
     if fallback_dict is not None and isinstance(fallback_dict, dict):
         sources.insert(0, DictSource(fallback_dict))
+
+    if include_env_var or env_var_map:
+        sources.append(EnvVarSource(include_env_var=include_env_var, env_var_map=env_var_map))
 
     if len(sources) == 1:
         # for single url, do not read with union source so that self configured auto reload will work
@@ -383,7 +400,7 @@ _LOCK = threading.Lock()
 _CONF = None
 
 
-def default_source():
+def default_source() -> KebabSource:
     """
     This function return default source if not present, otherwise
     :return: the default source cached by this module

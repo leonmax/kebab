@@ -1,6 +1,8 @@
 import copy
 import logging
 
+from kebab.exceptions import KebabException
+
 _logger = logging.getLogger(__name__)
 
 
@@ -27,6 +29,24 @@ def update_recursively(value1, value2):
             elif value2[key] is not None:
                 result[key] = value2[key]
         return result
+
+
+def fill_recursively(dictionary, key, value, delimiter='.'):
+    if delimiter not in key:
+        dictionary[key] = value
+    else:
+        next_key, remain_path = key.split(delimiter, 1)
+        inner_dictionary = dictionary.setdefault(next_key, {})
+        if isinstance(inner_dictionary, dict):
+            try:
+                fill_recursively(inner_dictionary,
+                                 key=remain_path,
+                                 value=value,
+                                 delimiter=delimiter)
+            except KebabException:
+                raise KebabException(f"unable to inflate key {key}, not a dictionary")
+        else:
+            raise KebabException(f"unable to inflate key {key}, not a dictionary")
 
 
 def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):
@@ -63,11 +83,12 @@ def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):
         return default_value
 
 
-def flatten(dictionary, path=None):
+def flatten(dictionary, path=None, delimiter='_'):
     """
     Given the dictionary, flatten it to one level (separated by underscore).
     :param dict[str, any] dictionary: the dictionary to flatten
     :param list[str] path: the path to the current dictionary
+    :param delimiter: the delimiter to join hierarchical keys.
     :return: flattened dictionary
     """
     path = path or []
@@ -79,5 +100,5 @@ def flatten(dictionary, path=None):
             flattened.update(flatten(child_value, child_path))
         else:
             # child_value could be either a list or str, int, unicode, float, ...
-            flattened['_'.join(child_path)] = child_value
+            flattened[delimiter.join(child_path)] = child_value
     return flattened
