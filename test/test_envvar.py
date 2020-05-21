@@ -3,7 +3,7 @@ import os
 from kebab.sources import load_source
 
 
-def main():
+def test_env_var_source():
     os.environ["XDG_CONFIG_HOME"] = "/home/kebab/.config"
     os.environ["XDG_DATA_HOME"] = "/home/kebab/.local/share"
 
@@ -19,6 +19,3 @@ def main():
     assert s.get("xdg.cache_home") is None
     assert "world" == s.get("hello")
 
-
-if __name__ == "__main__":
-    main()

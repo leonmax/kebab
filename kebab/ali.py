@@ -73,25 +73,3 @@ class OSSHandler(BaseHandler):
         endpoint = self._resolve_bucket_endpoint(bucket_name)
         bucket = oss2.Bucket(self._auth, endpoint, bucket_name)
         return bucket.get_object(key_name)
-
-
-def _main():
-    opener = build_opener(OSSHandler)
-    hangzhou_url = "oss://inceptio-annotation-backup/annotations/drivable_region_night/2020-04-21/flir-2020-03-20_right_backward.txt"
-    # fremont_url = "oss://inceptio-playground/tmp/rec_parser/stop_parser.sh"
-
-    def timed_open(opener, url, i):
-        start = time.time()
-        result = opener.open(url).read()
-        end = time.time()
-        elapsed = end - start
-        print(f"{i}: {elapsed} secs to open {url}")
-
-    with ThreadPoolExecutor(max_workers=24) as executor:
-        for i in range(100):
-            future = executor.submit(timed_open, opener, hangzhou_url, i)
-            # future = executor.submit(timed_open, opener, fremont_url)
-
-
-if __name__ == "__main__":
-    _main()
