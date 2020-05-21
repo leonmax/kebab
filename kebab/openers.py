@@ -56,8 +56,7 @@ class PythonPathHandler(BaseHandler):
 
 
 handlers = [
-    FileHandler, HTTPHandler, HTTPSHandler, PythonPathHandler,
-    ResourceHandler
+    FileHandler, HTTPHandler, HTTPSHandler, PythonPathHandler, ResourceHandler
 ]
 
 try:
@@ -65,6 +64,13 @@ try:
     from . import aws
     handlers.append(aws.S3Handler)
     handlers.append(aws.SecretsManagerHandler)
+except ImportError:
+    pass
+
+try:
+    # noinspection PyUnresolvedReferences
+    from . import ali
+    handlers.append(ali.OSSHandler)
 except ImportError:
     pass
 
