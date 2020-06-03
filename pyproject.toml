@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "kebab"
+name = "pykebab"
 version = "0.1.2"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
+packages = [
+    { include = "kebab" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"

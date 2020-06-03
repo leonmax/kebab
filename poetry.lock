@@ -61,10 +61,10 @@ description = "The AWS SDK for Python"
 name = "boto3"
 optional = true
 python-versions = "*"
-version = "1.13.14"
+version = "1.13.21"
 
 [package.dependencies]
-botocore = ">=1.16.14,<1.17.0"
+botocore = ">=1.16.21,<1.17.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -74,7 +74,7 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = true
 python-versions = "*"
-version = "1.16.14"
+version = "1.16.21"
 
 [package.dependencies]
 docutils = ">=0.10,<0.16"
@@ -268,15 +268,15 @@ category = "dev"
 description = "Pytest plugin for measuring coverage."
 name = "pytest-cov"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "2.8.1"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "2.9.0"
 
 [package.dependencies]
 coverage = ">=4.4"
 pytest = ">=3.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
+testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "pytest-xdist", "virtualenv"]
 
 [[package]]
 category = "main"
@@ -332,7 +332,7 @@ description = "Python 2 and 3 compatibility utilities"
 name = "six"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
-version = "1.14.0"
+version = "1.15.0"
 
 [[package]]
 category = "main"
@@ -365,7 +365,7 @@ ali = ["oss2", "alibaba-cloud-python-sdk-v2"]
 aws = ["boto3"]
 
 [metadata]
-content-hash = "d40a2559752b241d9ff11e6e064e40a97ee8a7045963c3098d9815f2f3886b2a"
+content-hash = "f0d94b1263b976c152424450907b4fcf08ed606c4c5749587dd8eb6d6a8b0e31"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -387,12 +387,12 @@ attrs = [
     {file = "attrs-19.3.0.tar.gz", hash = "sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72"},
 ]
 boto3 = [
-    {file = "boto3-1.13.14-py2.py3-none-any.whl", hash = "sha256:74d78ca0fd706f447a5f787d88214b298b213b1eddf2e8197051a0844df45146"},
-    {file = "boto3-1.13.14.tar.gz", hash = "sha256:703157e8f16c57133fde0082a2d8b99ca6d36120ca4479df1464df80dd148a87"},
+    {file = "boto3-1.13.21-py2.py3-none-any.whl", hash = "sha256:45e851db4b4ea6cedc9e138f6aa93fedaa5a8e0ae6d8a3f893b3e27c6aff60c8"},
+    {file = "boto3-1.13.21.tar.gz", hash = "sha256:86de0882ba324ba4ced362b5c94491b8d126d378f2ee24d32486cb64b160a89f"},
 ]
 botocore = [
-    {file = "botocore-1.16.14-py2.py3-none-any.whl", hash = "sha256:c8a5647069f978ae664987ebdeffaef0eb2910e88a52fcc8d52c9eb014fed8cc"},
-    {file = "botocore-1.16.14.tar.gz", hash = "sha256:a8e4cb8ed5a7e59fce935c9a550ccf616e9d5a053d02c374832610c2e377ca92"},
+    {file = "botocore-1.16.21-py2.py3-none-any.whl", hash = "sha256:3837f15e9ec9fd395beb0fb840a5976655c8ebb83121a4612e26f21aad8da908"},
+    {file = "botocore-1.16.21.tar.gz", hash = "sha256:7bd43e2fdf579875e3d3073e25699f5e524cc36a1748c4aee7c9c626e3760b2b"},
 ]
 certifi = [
     {file = "certifi-2020.4.5.1-py2.py3-none-any.whl", hash = "sha256:1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304"},
@@ -522,8 +522,8 @@ pytest = [
     {file = "pytest-3.10.1.tar.gz", hash = "sha256:e246cf173c01169b9617fc07264b7b1316e78d7a650055235d6d897bc80d9660"},
 ]
 pytest-cov = [
-    {file = "pytest-cov-2.8.1.tar.gz", hash = "sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b"},
-    {file = "pytest_cov-2.8.1-py2.py3-none-any.whl", hash = "sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626"},
+    {file = "pytest-cov-2.9.0.tar.gz", hash = "sha256:b6a814b8ed6247bd81ff47f038511b57fe1ce7f4cc25b9106f1a4b106f1d9322"},
+    {file = "pytest_cov-2.9.0-py2.py3-none-any.whl", hash = "sha256:c87dfd8465d865655a8213859f1b4749b43448b5fae465cb981e16d52a811424"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
@@ -551,8 +551,8 @@ s3transfer = [
     {file = "s3transfer-0.3.3.tar.gz", hash = "sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db"},
 ]
 six = [
-    {file = "six-1.14.0-py2.py3-none-any.whl", hash = "sha256:8f3cd2e254d8f793e7f3d6d9df77b92252b52637291d0f0da013c76ea2724b6c"},
-    {file = "six-1.14.0.tar.gz", hash = "sha256:236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a"},
+    {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
+    {file = "six-1.15.0.tar.gz", hash = "sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"},
 ]
 urllib3 = [
     {file = "urllib3-1.25.9-py2.py3-none-any.whl", hash = "sha256:88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115"},
