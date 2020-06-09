@@ -18,7 +18,7 @@ _DISABLE_RELOAD = -1
 DEFAULT_URL_ENVVAR = "CONF_URL"
 
 
-class KebabSource(object):
+class KebabSource:
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
         self._last_reload_timestamp = 0  # type: float
@@ -259,12 +259,12 @@ class KebabSource(object):
 
 
 class UrlSource(KebabSource):
-    def __init__(self, url, **kwargs):
+    def __init__(self, url, opener=DEFAULT_OPENER, **kwargs):
         """
         :param str url: a url of supported protocols in openers.DEFAULT_OPENER
         """
         super(UrlSource, self).__init__(**kwargs)
-        self._opener = DEFAULT_OPENER
+        self._opener = opener
         if ':' not in url:
             url = 'file://{}'.format(os.path.abspath(url))
         self._url = url
@@ -354,8 +354,17 @@ class SubSource(KebabSource):
         return self._parent_source.get(self._source_name, required=True, expected_type=dict)
 
 
-def load_source(default_urls='app.yaml', fallback_dict=None, reload_interval_in_secs=_DISABLE_RELOAD,
-                include_env_var=False, env_var_map=None, url_envvar=DEFAULT_URL_ENVVAR) -> KebabSource:
+def union(*sources, **kwargs):
+    return UnionSource(sources=sources, **kwargs)
+
+
+def literal(**dictionary):
+    return DictSource(dictionary=dictionary)
+
+
+def load_source(default_urls='app.yaml', fallback_dict=None, opener=DEFAULT_OPENER,
+                include_env_var=False, env_var_map=None, url_envvar=DEFAULT_URL_ENVVAR,
+                reload_interval_in_secs=_DISABLE_RELOAD):
     """
 
     :param str|list[str]|tuple[str] default_urls:
@@ -376,7 +385,7 @@ def load_source(default_urls='app.yaml', fallback_dict=None, reload_interval_in_
         urls = urls_from_env.split(',')
 
     sources = [
-        UrlSource(url)
+        UrlSource(url, opener=opener)
         for url in urls
     ]  # type: List[KebabSource]
 
@@ -390,7 +399,7 @@ def load_source(default_urls='app.yaml', fallback_dict=None, reload_interval_in_
         # for single url, do not read with union source so that self configured auto reload will work
         source = sources[0]
     else:
-        source = UnionSource(sources=sources)
+        source = union(sources=sources)
     source.reload(reload_interval_in_secs=reload_interval_in_secs)
     return source
 
@@ -400,7 +409,7 @@ _LOCK = threading.Lock()
 _CONF = None
 
 
-def default_source() -> KebabSource:
+def default_source():
     """
     This function return default source if not present, otherwise
     :return: the default source cached by this module

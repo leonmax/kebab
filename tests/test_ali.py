@@ -4,6 +4,7 @@ from urllib.request import build_opener
 
 import pytest
 
+ali = pytest.importorskip("kebab.ali")
 from kebab.ali import OSSHandler
 
 
