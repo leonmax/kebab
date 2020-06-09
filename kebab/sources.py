@@ -18,7 +18,7 @@ _DISABLE_RELOAD = -1
 DEFAULT_URL_ENVVAR = "CONF_URL"
 
 
-class KebabSource:
+class KebabSource(object):
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
         self._last_reload_timestamp = 0  # type: float
