@@ -1,8 +1,6 @@
 import threading
-import time
-from concurrent.futures.thread import ThreadPoolExecutor
 from urllib.error import URLError
-from urllib.request import BaseHandler, build_opener
+from urllib.request import BaseHandler
 
 import oss2
 from alibabacloud import ClientConfig

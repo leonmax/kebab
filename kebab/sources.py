@@ -185,7 +185,7 @@ class KebabSource(object):
         if config_name == '.':
             config_value = self._get_context()
         else:
-            config_name = config_name.rstrip('.')
+            config_name = config_name.lstrip('.')
             config_value = lookup_recursively(self._get_context(),
                                               key=config_name, default_value=default_value)
 

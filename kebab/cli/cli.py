@@ -11,3 +11,7 @@ from kebab.sources import load_source
 def run(sources, key, env_vars):
     conf = load_source(default_urls=sources, include_env_var=env_vars)
     click.echo(json.dumps(conf.get(key)))
+
+
+if __name__ == '__main__':
+    run()

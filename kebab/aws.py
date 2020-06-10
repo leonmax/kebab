@@ -59,7 +59,7 @@ class SecretsManagerHandler(BaseHandler):
                 # no default region_name available
                 pass
 
-        self.pattern = re.compile('awssecret://(?P<secret_name>[.\w/-]+)(\?(?P<query_string>.*))?')
+        self.pattern = re.compile(r'awssecret://(?P<secret_name>[.\w/-]+)(\?(?P<query_string>.*))?')
 
     def awssecret_open(self, req):
         m = self.pattern.match(req.get_full_url())
