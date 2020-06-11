@@ -1,8 +1,9 @@
+#!/usr/bin/env python
 import json
 
 import click
 
-from examples.util import by_interval
+from examples.util import interval
 from kebab import default_source, kebab_config, Field
 
 source = default_source()
@@ -20,20 +21,20 @@ def cli():
 
 
 @cli.command()
-@click.option('-i', '--interval', default=-1, type=float)
-def cast(interval):
+@click.option('-i', '--interval', "by_secs", default=-1, type=float)
+def cast(by_secs):
     while True:
-        with by_interval(interval):
+        with interval(by_secs):
             value = source.cast("demo", DemoConfig)
             click.echo(value)
 
 
 @cli.command()
-@click.option('-i', '--interval', default=-1, type=float)
+@click.option('-i', '--interval', "by_secs", default=-1, type=float)
 @click.argument('key', default='.', nargs=1, type=str)
-def get(interval, key):
+def get(by_secs, key):
     while True:
-        with by_interval(interval):
+        with interval(by_secs):
             value = source.get(key)
             click.echo(json.dumps(value))
 

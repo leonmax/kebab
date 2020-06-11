@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def by_interval(secs=-1):
+def interval(secs=-1):
     try:
         yield
         if secs > 0:

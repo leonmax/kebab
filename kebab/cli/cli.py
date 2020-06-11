@@ -15,6 +15,8 @@ DISABLE_RELOAD = _DISABLE_RELOAD
 @click.option('-k', '--key', default='.', type=str)
 @click.option('-w', '--watch', default=DISABLE_RELOAD, type=float)
 def run(sources, key, watch, env_vars):
+    if not sources:
+        sources = "app.yaml"
     conf = load_source(default_urls=sources, include_env_var=env_vars, reload_interval_in_secs=watch)
     while True:
         click.echo(json.dumps(conf.get(key)))
