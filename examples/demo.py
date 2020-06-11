@@ -8,7 +8,7 @@ from kebab import default_source, kebab_config, Field
 source = default_source()
 
 
-@kebab_config
+@kebab_config(auto_repr=True)
 class DemoConfig:
     str_value = Field("ready", default_value=5)
     int_value = Field("int", required=True, expected_type=int)
@@ -25,7 +25,7 @@ def cast(interval):
     while True:
         with by_interval(interval):
             value = source.cast("demo", DemoConfig)
-            click.echo(f"{value}")
+            click.echo(value)
 
 
 @cli.command()

@@ -23,23 +23,17 @@ class CustomConfig2:
 
 
 @pytest.fixture
-def conf(request):
-    source = literal(
+def source():
+    return literal(
         simple='a great news',
         auto_cast='20',
         layer1={
             "layer2": 100
         }
     )
-    return request.param(source=source)
 
 
-@pytest.mark.parametrize(
-    'conf',
-    (CustomConfig, CustomConfig2),
-    indirect=True
-)
-def test_kebab_config(conf):
+def _assert_conf(conf):
     assert conf.required_key == 'a great news'
     assert conf.auto_cast_key == 20
     # non exist with default value
@@ -47,3 +41,16 @@ def test_kebab_config(conf):
     # non exist without default
     assert conf.nonexist_no_default is None
     assert conf.nested_key == 100
+
+
+# noinspection PyArgumentList
+def test_meta_class(source):
+    _assert_conf(CustomConfig(source))
+
+
+def test_kebab_config(source):
+    _assert_conf(CustomConfig2(source))
+
+
+def test_cast(source):
+    _assert_conf(source.cast(".", CustomConfig2))

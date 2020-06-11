@@ -10,12 +10,12 @@ def test_reload():
     s = load_source(
         default_urls="mock://",
         opener=mock_opener(context),
-        reload_interval_in_secs=.008
+        reload_interval_in_secs=.001
     )
     assert s.get("dynamic") == 1
 
     context["dynamic"] = 2
-    time.sleep(.01)
+    time.sleep(.015)
     assert s.get("dynamic") == 2
 
 
@@ -23,11 +23,11 @@ def test_reload_extension():
     context = {"dynamic": 1}
     DEFAULT_OPENER.add_handler(MockHandler(context))
     s = literal(
-        __reload__={"reload_interval_in_secs": .008},
+        __reload__={"reload_interval_in_secs": .01},
         __import__=["mock://"]
     )
     assert s.get("dynamic") == 1
 
     context["dynamic"] = 2
-    time.sleep(.01)
+    time.sleep(.015)
     assert s.get("dynamic") == 2

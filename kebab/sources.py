@@ -242,7 +242,7 @@ class KebabSource(object):
         config.reload(reload_interval_in_secs=reload_interval_in_secs)
         return config
 
-    def cast(self, config_name, config_class):
+    def cast(self, config_name, config_class, *args, **kwargs):
         """
         Caveats:
 
@@ -251,10 +251,10 @@ class KebabSource(object):
 
         :param str config_name: the config_name must be a dictionary
         :param type config_class: the config_class to cast to
-        :rtype: config_class
+        :return: the instance of the config_class
         """
-        source = SubSource(self, config_name)
-        return config_class(source)
+        source = self if config_name == "." else SubSource(self, config_name)
+        return config_class(source, *args, **kwargs)
 
 
 class ImportExtension(ContextExtension):

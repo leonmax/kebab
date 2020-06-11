@@ -1,4 +1,3 @@
-import os
 from concurrent.futures.thread import ThreadPoolExecutor
 from urllib.request import build_opener
 
