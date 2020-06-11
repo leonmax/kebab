@@ -32,4 +32,3 @@ class KebabConfigMeta(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
         new_cls = super(KebabConfigMeta, mcs).__new__(mcs, name, bases, namespace)
         return kebab_config(new_cls)
-

@@ -5,7 +5,8 @@ import queue  # using python-future for 2/3 compatibility
 import threading
 import time
 # noinspection PyCompatibility,PyPackageRequirements
-from typing import List
+from typing import List, Dict
+from urllib.request import OpenerDirector
 
 import yaml
 
@@ -18,7 +19,27 @@ _DISABLE_RELOAD = -1
 DEFAULT_URL_ENVVAR = "CONF_URL"
 
 
+class ContextExtension(object):
+    @property
+    @abc.abstractmethod
+    def keyword(self):
+        return ""
+
+    @abc.abstractmethod
+    def handle(self, source, extension_context):
+        pass
+
+
 class KebabSource(object):
+    _context_extensions = {}  # type: Dict[str, ContextExtension]
+
+    @classmethod
+    def register_extension(cls, extension):
+        if issubclass(extension, ContextExtension):
+            extension = extension()
+        if isinstance(extension, ContextExtension):
+            KebabSource._context_extensions[extension.keyword] = extension
+
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
         self._last_reload_timestamp = 0  # type: float
@@ -37,51 +58,14 @@ class KebabSource(object):
     def _load_context_recursively(self):
         _logger.debug("loading {}".format(self))
 
-        _context = {}
-        source_queue = queue.Queue()
-        source_queue.put(self)
-        while not source_queue.empty():
-            source = source_queue.get()  # type: KebabSource
-            try:
-                next_context = source._load_context()
+        _context = self._load_context()
 
-                # reload other source from __import__ section
-                for url in next_context.pop('__import__', []):
-                    source_queue.put(UrlSource(url))
-
-                _context = update_recursively(_context, next_context)
-            except Exception as e:
-                _logger.warning("failed to load source of {}, will skip\n{}".format(source, e))
-
-        _context = self._handle_env_map(_context)
-        self._handle_self(_context)
+        for keyword, extension in KebabSource._context_extensions.items():
+            if keyword in _context:
+                extension_context = _context.pop(keyword)
+                _context = update_recursively(_context, extension.handle(self, extension_context))
 
         return _context
-
-    def _handle_env_map(self, _context):
-        if '__env_map__' in _context:
-            mapped_src = EnvVarSource(
-                include_env_var=False,
-                env_var_map=_context['__env_map__']
-            )
-            # noinspection PyProtectedMember
-            _env_context = mapped_src._load_context()
-            return update_recursively(_context, _env_context)
-        else:
-            return _context
-
-    def _handle_self(self, _context):
-        if '__self__' in _context:
-            self_config = _context.pop('__self__')
-
-            try:
-                # the source can define its own reload_interval_in_secs in the __self__ section
-                if 'reload_interval_in_secs' in self_config:
-                    reload_interval_in_secs = float(self_config['reload_interval_in_secs'])
-
-                    self.reload(reload_interval_in_secs=reload_interval_in_secs, skip_first=True)
-            except Exception as e:
-                _logger.warning("failed to load __self__ section of {}, will ignore\n{}".format(self, e))
 
     def disable_reload(self):
         self._reload_disabled.set()
@@ -90,7 +74,7 @@ class KebabSource(object):
         """
 
         :param float|int reload_interval_in_secs:
-        :param bool skip_first:
+        :param bool skip_first: if False, reload immediately, otherwise, reload after the interval
         :return:
         """
         if (self._reload_disabled.is_set() and
@@ -258,13 +242,55 @@ class KebabSource(object):
         return config
 
 
+class ImportExtension(ContextExtension):
+    @property
+    def keyword(self):
+        return "__import__"
+
+    def handle(self, source, extension_context):
+        root = literal(__import__=extension_context)
+        context = {}
+        source_queue = queue.Queue()
+        source_queue.put(root)
+        while not source_queue.empty():
+            source = source_queue.get()  # type: KebabSource
+            try:
+                # noinspection PyProtectedMember
+                next_context = source._load_context()
+
+                # reload other source from __import__ section
+                for url in next_context.pop('__import__', []):
+                    source_queue.put(UrlSource(url))
+
+                context = update_recursively(context, next_context)
+            except Exception as e:
+                _logger.warning("failed to load source of {}, will skip\n{}".format(source, e))
+        return context
+
+
+class ReloadExtension(ContextExtension):
+    @property
+    def keyword(self):
+        return "__reload__"
+
+    def handle(self, source, extension_context):
+        try:
+            # the source can define its own reload_interval_in_secs in the __reload__ section
+            if 'reload_interval_in_secs' in extension_context:
+                reload_interval_in_secs = float(extension_context['reload_interval_in_secs'])
+
+                source.reload(reload_interval_in_secs=reload_interval_in_secs, skip_first=True)
+        except Exception as e:
+            _logger.warning("failed to load __reload__ section of {}, will ignore\n{}".format(self, e))
+
+
 class UrlSource(KebabSource):
-    def __init__(self, url, opener=DEFAULT_OPENER, **kwargs):
+    def __init__(self, url, opener=None, **kwargs):
         """
         :param str url: a url of supported protocols in openers.DEFAULT_OPENER
         """
         super(UrlSource, self).__init__(**kwargs)
-        self._opener = opener
+        self._opener = opener or DEFAULT_OPENER
         if ':' not in url:
             url = 'file://{}'.format(os.path.abspath(url))
         self._url = url
@@ -286,7 +312,13 @@ class DictSource(KebabSource):
         return self._dictionary
 
 
-class EnvVarSource(KebabSource):
+class EnvVarSource(KebabSource, ContextExtension):
+    """
+    this class supports __env_map__ sections
+    all environment variables keys under __env_map__ will be mapped
+    the Kebab context key
+    """
+
     def __init__(self, include_env_var=False, env_var_map=None, **kwargs):
         super(EnvVarSource, self).__init__(**kwargs)
         env_vars = dict(os.environ)
@@ -299,12 +331,25 @@ class EnvVarSource(KebabSource):
     def _load_context(self):
         return self._dictionary
 
+    @property
+    def keyword(self):
+        return "__env_map__"
+
+    def handle(self, source, extension_context):
+        mapped_src = EnvVarSource(
+            include_env_var=False,
+            env_var_map=extension_context
+        )
+        # noinspection PyProtectedMember
+        _env_context = mapped_src._load_context()
+        return _env_context
+
 
 class UnionSource(DictSource):
     """
-    this class supports __import__ and __self__ sections
+    this class supports __import__ and __reload__ sections
     all file under __import__ will be combined
-    in the __self__ section, reload_interval_in_secs will be honored for the current source
+    in the __reload__ section, reload_interval_in_secs will be honored for the current source
     """
 
     def __init__(self, sources=None, **kwargs):
@@ -314,8 +359,8 @@ class UnionSource(DictSource):
             sources = []
         elif isinstance(sources, KebabSource):
             sources = [sources]
-        elif (not isinstance(sources, list) or
-              any([not isinstance(sp, KebabSource) for sp in sources])):
+        elif (not any([isinstance(sources, t) for t in (list, tuple, set)]) or
+              any([not isinstance(s, KebabSource) for s in sources])):
             raise ValueError('Please pass in a single KebabSource or a list of KebabSource')
         self._sources = sources
 
@@ -355,23 +400,34 @@ class SubSource(KebabSource):
 
 
 def union(*sources, **kwargs):
+    # """
+    # The shortcut to create UnionSource
+    # :param sources: a list of source to be union
+    # :rtype: UnionSource
+    # """
     return UnionSource(sources=sources, **kwargs)
 
 
 def literal(**dictionary):
+    """
+    The shortcut to create DictSource
+    :param dictionary: a list of key value pairs
+    :rtype: DictSource
+    """
     return DictSource(dictionary=dictionary)
 
 
-def load_source(default_urls='app.yaml', fallback_dict=None, opener=DEFAULT_OPENER,
+def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
                 include_env_var=False, env_var_map=None, url_envvar=DEFAULT_URL_ENVVAR,
                 reload_interval_in_secs=_DISABLE_RELOAD):
     """
 
     :param str|list[str]|tuple[str] default_urls:
     :param dict fallback_dict:
-    :param int reload_interval_in_secs:
+    :param OpenerDirector opener:
+    :param int|float reload_interval_in_secs:
     :param bool include_env_var:
-    :param dict env_var_map: map Environment Variable key to a hierachical key such as NESTED_KEY -> nested.key
+    :param dict env_var_map: map Environment Variable key to a hierarchical key such as NESTED_KEY -> nested.key
     :param str url_envvar: the environment variable key to load config url
     :return: the kebab source of these urls
     :rtype: KebabSource
@@ -399,10 +455,14 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=DEFAULT_OPEN
         # for single url, do not read with union source so that self configured auto reload will work
         source = sources[0]
     else:
-        source = union(sources=sources)
+        source = UnionSource(sources=sources)
     source.reload(reload_interval_in_secs=reload_interval_in_secs)
     return source
 
+
+KebabSource.register_extension(ReloadExtension)
+KebabSource.register_extension(ImportExtension)
+KebabSource.register_extension(EnvVarSource)
 
 # region default_source function for convenience.
 _LOCK = threading.Lock()

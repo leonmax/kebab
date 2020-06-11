@@ -6,29 +6,29 @@ from kebab import literal
 
 
 class CustomConfig(metaclass=KebabConfigMeta):
-    groundtruth = Field('groundtruth', expected_type=int)
-    input_bucket_name = Field("hello")
-    output_bucket_name = Field("nonexist", default_value=1)
-    nonexist2 = Field("nonexist2")
-    nested_key = Field("level1.level2")
+    required_key = Field("simple", required=True)
+    auto_cast_key = Field('auto_cast', expected_type=int)
+    nonexist_with_default = Field("nonexist", default_value=1)
+    nonexist_no_default = Field("nonexist2")
+    nested_key = Field("layer1.layer2")
 
 
 @kebab_config
 class CustomConfig2:
-    groundtruth = Field('groundtruth', expected_type=int)
-    input_bucket_name = Field("hello")
-    output_bucket_name = Field("nonexist", default_value=1)
-    nonexist2 = Field("nonexist2")
-    nested_key = Field("level1.level2")
+    required_key = Field("simple", required=True)
+    auto_cast_key = Field('auto_cast', expected_type=int)
+    nonexist_with_default = Field("nonexist", default_value=1)
+    nonexist_no_default = Field("nonexist2")
+    nested_key = Field("layer1.layer2")
 
 
 @pytest.fixture
 def conf(request):
     source = literal(
-        groundtruth='20',
-        hello="world",
-        level1={
-            "level2": 100
+        simple='a great news',
+        auto_cast='20',
+        layer1={
+            "layer2": 100
         }
     )
     return request.param(source=source)
@@ -40,8 +40,10 @@ def conf(request):
     indirect=True
 )
 def test_kebab_config(conf):
-    assert conf.groundtruth == 20
-    assert conf.input_bucket_name == 'world'
-    assert conf.output_bucket_name == 1
-    assert conf.nonexist2 is None
+    assert conf.required_key == 'a great news'
+    assert conf.auto_cast_key == 20
+    # non exist with default value
+    assert conf.nonexist_with_default == 1
+    # non exist without default
+    assert conf.nonexist_no_default is None
     assert conf.nested_key == 100

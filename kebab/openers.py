@@ -61,6 +61,13 @@ handlers = [
 
 try:
     # noinspection PyUnresolvedReferences
+    from . import k8s
+    handlers.append(k8s.K8SHandler)
+except ImportError:
+    pass
+
+try:
+    # noinspection PyUnresolvedReferences
     from . import aws
     handlers.append(aws.S3Handler)
     handlers.append(aws.SecretsManagerHandler)
