@@ -1,4 +1,5 @@
 import abc
+import copy
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
@@ -241,6 +242,20 @@ class KebabSource(object):
         config.reload(reload_interval_in_secs=reload_interval_in_secs)
         return config
 
+    def cast(self, config_name, config_class):
+        """
+        Caveats:
+
+        When parent KebabSource reloads, SubSource is not effected the updated values in KebabSource.
+        In another word, reload in SubSource is limited and is not encouraged to use at the moment.
+
+        :param str config_name: the config_name must be a dictionary
+        :param type config_class: the config_class to cast to
+        :rtype: config_class
+        """
+        source = SubSource(self, config_name)
+        return config_class(source)
+
 
 class ImportExtension(ContextExtension):
     @property
@@ -309,7 +324,7 @@ class DictSource(KebabSource):
         self._dictionary = dictionary or {}
 
     def _load_context(self):
-        return self._dictionary
+        return copy.deepcopy(self._dictionary)
 
 
 class EnvVarSource(KebabSource, ContextExtension):
@@ -460,9 +475,9 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
     return source
 
 
-KebabSource.register_extension(ReloadExtension)
 KebabSource.register_extension(ImportExtension)
 KebabSource.register_extension(EnvVarSource)
+KebabSource.register_extension(ReloadExtension)
 
 # region default_source function for convenience.
 _LOCK = threading.Lock()

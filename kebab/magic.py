@@ -1,3 +1,5 @@
+import inspect
+
 from kebab.sources import KebabSource
 
 
@@ -16,15 +18,27 @@ def kebab_config(klass):
         user_init = None
 
     def __init__(self, source: KebabSource, *args, **kwargs):
-        self.__config_names__ = []
-        for field_name, field in klass.__dict__.items():
-            if isinstance(field, Field):
-                self.__config_names__.append(field.config_name)
-                setattr(self, field_name, source.get(**field.__dict__))
+        if isinstance(source, KebabSource):
+            for field_name, field in klass.__dict__.items():
+                if isinstance(field, Field):
+                    setattr(self, field_name, source.get(**field.__dict__))
         if user_init:
             user_init(self, *args, **kwargs)
-
     setattr(klass, '__init__', __init__)
+
+    if hasattr(klass, '__repr__'):
+        def __repr__(self):
+            result = []
+            for key in vars(self):
+                try:
+                    if not key.startswith("__") and not key.endswith("__"):
+                        value = getattr(self, key)
+                        result.append(f'{key}: {value!r}')
+                except AttributeError:
+                    continue
+            return f'{self.__class__.__name__}({", ".join(result)})'
+        setattr(klass, '__repr__', __repr__)
+
     return klass
 
 

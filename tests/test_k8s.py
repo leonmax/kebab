@@ -23,17 +23,13 @@ def opener():
 
 @pytest.fixture
 def secret_url():
-    if os.getenv('KUBERNETES_SERVICE_HOST'):
-        config.load_incluster_config()
-    else:
-        config.load_kube_config()
-
-    api = client.CoreV1Api()
+    api = K8SHandler.get_api_client()
     namespace = "default"
     for secret in api.list_namespaced_secret(namespace).items:
         secret_name = secret.metadata.name
+
         if secret_name.startswith("default-token-"):
-            return f"k8s://secret/{namespace}/{secret_name}"
+            return f"k8s://{namespace}/secret/{secret_name}"
 
 
 def test_k8s_secret(opener, secret_url):
@@ -47,14 +43,14 @@ def test_k8s_secret_with_key(opener, secret_url):
 
 
 def test_k8s_configmap(opener):
-    url = "k8s://configmap/kube-public/cluster-info/"
+    url = "k8s://kube-public/configmap/cluster-info/"
 
     result = opener.open(url).read()
     assert "kubeconfig" in result
 
 
 def test_k8s_configmap_with_key(opener):
-    url = "k8s://configmap/kube-public/cluster-info/kubeconfig"
+    url = "k8s://kube-public/cm/cluster-info/kubeconfig"
 
     result = opener.open(url).read()
     assert "apiVersion" in result
@@ -62,7 +58,7 @@ def test_k8s_configmap_with_key(opener):
 
 @pytest.mark.skip
 def test_k8s_opener_with_load(opener):
-    url = "k8s://configmap/kube-public/cluster-info/kubeconfig"
+    url = "k8s://kube-public/configmap/cluster-info/kubeconfig"
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         for i in range(2):

@@ -11,11 +11,11 @@ from kubernetes import client, config
 
 
 K8S_URL_PATTERN = re.compile(
-    r'k8s://%(type)s/%(ns)s/%(name)s(/%(key)s*)?' % {
-        "type": r"(?P<type>[\w-]+)",
-        "ns":   r"(?P<ns>[\w-]+)",
+    r'k8s://%(ns)s/%(type)s/%(name)s(/%(key)s*)?' % {
+        "ns":   r"(?P<ns>[\.\w-]*)",
+        "type": r"(?P<type>\w+)",
         "name": r"(?P<name>[\w-]+)",
-        "key":  r"(?P<key>[\w-]+)"
+        "key":  r"(?P<key>[^\/]+)"
     }
 )
 
@@ -26,20 +26,24 @@ class _ParsedUrl:
         m = K8S_URL_PATTERN.match(url)
         if not m:
             raise URLError('url {} is not parsable'.format(url))
-        self.resource_type = m.group('type')
+        self.resource_type = 'configmap' if m.group('type') in 'cm' else m.group('type')
         self.resource_name = m.group('name')
-        self.namespace = m.group('ns')
+        self.namespace = 'default' if m.group('ns') in ['', '.'] else m.group('ns')
         self.key = m.group('key')
 
 
 class K8SHandler(BaseHandler):
-    def __init__(self):
+    @staticmethod
+    def get_api_client():
         if os.getenv('KUBERNETES_SERVICE_HOST'):
             config.load_incluster_config()
         else:
             config.load_kube_config()
 
-        self.api = client.CoreV1Api()
+        return client.CoreV1Api()
+
+    def __init__(self):
+        self.api = self.get_api_client()
 
     def k8s_open(self, req):
         url = req.get_full_url()
@@ -47,7 +51,7 @@ class K8SHandler(BaseHandler):
 
         if pu.resource_type == 'secret':
             stream = self._read_secret(pu)
-        elif pu.resource_type in ['configmap', 'cm']:
+        elif pu.resource_type == 'configmap':
             stream = self._read_configmap(pu)
         else:
             raise URLError('url {} is not parsable'.format(pu.url))

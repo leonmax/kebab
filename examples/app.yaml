@@ -1,0 +1,11 @@
+demo:
+  ready: 1
+  int: "123"
+
+__import__:
+  - app2.yaml
+
+__env_map__:
+  KUBECONFIG: kube.config
+  PATH: sys.path
+  HOME: sys.home

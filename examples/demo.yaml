@@ -1,0 +1,3 @@
+demo:
+  ready: 10
+  int: "789"

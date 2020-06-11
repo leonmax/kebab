@@ -20,8 +20,9 @@ def mock_opener(dictionary):
 
 class MockHandler(BaseHandler):
     def __init__(self, dictionary=None):
-        self._content = json.dumps(dictionary or {})
+        self._dictionary = dictionary or {}
 
     # noinspection PyMethodMayBeStatic
     def mock_open(self, req):
-        return addinfourl(StringIO(self._content), [], req.get_full_url())
+        _content = json.dumps(self._dictionary)
+        return addinfourl(StringIO(_content), [], req.get_full_url())

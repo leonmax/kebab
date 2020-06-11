@@ -1,7 +1,3 @@
-import os
-
-import pytest
-
 from kebab.sources import load_source, literal
 
 # Caveats!!!
