@@ -21,8 +21,8 @@ publish:
   before_script:
     - pip install poetry
     - export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
-#    - test "$CI_COMMIT_TAG" = "$VERSION"
+    - test "$CI_COMMIT_TAG" = "$VERSION"
   script:
     - poetry publish --build
-#  only:
-#    - tags
+  only:
+    - tags
