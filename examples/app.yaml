@@ -1,11 +1,11 @@
 demo:
   ready: 1
-  int: "123"
+  int: "123b"
 
 __import__:
   - app2.yaml
 
 __env_map__:
-  KUBECONFIG: kube.config
-  PATH: sys.path
+  USER: sys.user
   HOME: sys.home
+  VIRTUAL_ENV: py.venv

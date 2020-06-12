@@ -25,4 +25,4 @@ publish:
   script:
     - poetry publish --build
   only:
-    - tag
+    - tags

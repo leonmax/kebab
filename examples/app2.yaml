@@ -1,12 +1,13 @@
 demo:
-  ready: 4
+  ready: 10
   int: "456"
 
 __reload__:
   reload_interval_in_secs: .5
 
-__import__:
-  - k8s://./cm/kebab/demo.yaml
-  - k8s://kube-public/cm/cluster-info/kubeconfig
+#__import__:
+#  - k8s://./cm/kebab/demo.yaml
+#  - k8s://kube-public/configmap/cluster-info/kubeconfig
 #  - k8s://default/secret/default-token-rm42d
 #  - oss://inceptio-data-collection-test/2020/05/21/23002bf9-a5ef-44be-ac0f-e69be428c434/metadata.yaml
+#  - oss://inceptio-data-collection-test/2020/05/21/23002bf9-a5ef-44be-ac0f-e69be428c434/chariot.json
