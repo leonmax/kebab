@@ -19,7 +19,7 @@ stages:
 publish:
   stage: publish
   before_script:
-    - pip install -y poetry
+    - pip install poetry
     - export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
     - test $CI_COMMIT_TAG == $VERSION
   script:
