@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+import logging.config
 
 import click
 
 from examples.util import interval
 from kebab import default_source, kebab_config, Field
+
+k = default_source()
+logging.config.dictConfig(k.subsource("logging"))
 
 
 @kebab_config(auto_repr=True)
@@ -17,7 +21,7 @@ class DemoConfig:
 def cast(by_secs):
     while True:
         with interval(by_secs):
-            value = default_source().cast("demo", DemoConfig)
+            value = k.cast("demo", DemoConfig)
             click.echo(value)
 
 

@@ -31,18 +31,12 @@ class ContextExtension(object):
         pass
 
 
-class KebabSource(object):
+class KebabSource(dict):
     _context_extensions = {}  # type: Dict[str, ContextExtension]
-
-    @classmethod
-    def register_extension(cls, extension):
-        if issubclass(extension, ContextExtension):
-            extension = extension()
-        if isinstance(extension, ContextExtension):
-            KebabSource._context_extensions[extension.keyword] = extension
 
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
+        super(KebabSource, self).__init__(**kwargs)
         self._last_reload_timestamp = 0  # type: float
         self._reload_lock = threading.RLock()
         self._reload_timer = None
@@ -51,6 +45,33 @@ class KebabSource(object):
 
     def __repr__(self):
         return self.__class__.__name__
+
+    def __getitem__(self, key):
+        return self.get(key)
+
+    def __len__(self):
+        return len(self.get())
+
+    def has_key(self, k):
+        return k in self.get()
+
+    def keys(self):
+        return self.get().keys()
+
+    def values(self):
+        return self.get().values()
+
+    def items(self):
+        return self.get().items()
+
+    def __cmp__(self, dict_):
+        return self.get().__cmp__(dict_)
+
+    def __contains__(self, item):
+        return item in self.get()
+
+    def __iter__(self):
+        return iter(self.get())
 
     @abc.abstractmethod
     def _load_context(self):
@@ -131,13 +152,15 @@ class KebabSource(object):
             config_name='.',
             default_value=None,
             required=False,
-            expected_type=None):
+            expected_type=None,
+            masked=False):
         """
         :param str config_name: The key to retrieve the config value. If '.', return the whole context
         :param object default_value: The default value to fall back to if config_name not found
-        :param bool required: When the the value is not found, throw exception if True, return None otherwise.
+        :param bool required: When the required value is not found, throw exception if set True, return None otherwise.
                Default is False.
         :param type expected_type: Expected type of the value, ignored if default_value presents.
+        :param bool masked: The value will be logged as "*" if set True. This is useful when a value is a secret.
         :rtype str|int|bool|list[str]:
 
         Function to get a config value. This is a facade function which will retrieve all sources,
@@ -182,7 +205,8 @@ class KebabSource(object):
 
         config_value = self._cast(config_value, expected_type)
 
-        _logger.debug("read config: {} = {}".format(config_name, config_value))
+        printed_value = "*" * len(str(config_value)) if masked else config_value
+        _logger.debug("read config: {} = {}".format(config_name, printed_value))
 
         return config_value
 
@@ -238,9 +262,9 @@ class KebabSource(object):
         :param int|float reload_interval_in_secs: same as parent param
         :rtype: KebabSource
         """
-        config = SubSource(self, config_name)
-        config.reload(reload_interval_in_secs=reload_interval_in_secs)
-        return config
+        source = SubSource(self, config_name)
+        source.reload(reload_interval_in_secs=reload_interval_in_secs)
+        return source
 
     def cast(self, config_name, config_class, *args, **kwargs):
         """
@@ -297,6 +321,19 @@ class ReloadExtension(ContextExtension):
                 source.reload(reload_interval_in_secs=reload_interval_in_secs, skip_first=True)
         except Exception as e:
             _logger.warning("failed to load __reload__ section of {}, will ignore\n{}".format(self, e))
+
+
+class StrSource(KebabSource):
+    def __init__(self, content, **kwargs):
+        """
+        :param str string:
+        :param kwargs:
+        """
+        super(StrSource, self).__init__(**kwargs)
+        self._content = content
+
+    def _load_context(self):
+        return yaml.safe_load(self._content)
 
 
 class UrlSource(KebabSource):
@@ -447,7 +484,7 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
     :return: the kebab source of these urls
     :rtype: KebabSource
     """
-    if default_urls and not isinstance(default_urls, list) and not isinstance(default_urls, tuple):
+    if default_urls and isinstance(default_urls, str):
         default_urls = default_urls.split(',')
     urls = default_urls or []
 
@@ -475,23 +512,13 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
     return source
 
 
-KebabSource.register_extension(ImportExtension)
-KebabSource.register_extension(EnvVarSource)
-KebabSource.register_extension(ReloadExtension)
-
-# region default_source function for convenience.
-_LOCK = threading.Lock()
-_CONF = None
+def register_extension(extension):
+    if issubclass(extension, ContextExtension):
+        extension = extension()
+    if isinstance(extension, ContextExtension):
+        KebabSource._context_extensions[extension.keyword] = extension
 
 
-def default_source():
-    """
-    This function return default source if not present, otherwise
-    :return: the default source cached by this module
-    """
-    global _CONF
-    with _LOCK:
-        if _CONF is None:
-            _CONF = load_source()
-    return _CONF
-# endregion
+register_extension(ImportExtension)
+register_extension(EnvVarSource)
+register_extension(ReloadExtension)

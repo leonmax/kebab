@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.2.3"
+version = "0.2.5"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [
@@ -26,6 +26,7 @@ ali = ["oss2", "alibaba-cloud-python-sdk-v2"]
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.3"
 pytest-cov = "^2.10.0"
+mock = "^4.0.2"
 
 [tool.poetry.scripts]
 kebab = 'kebab.cli:run'
