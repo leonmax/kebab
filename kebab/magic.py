@@ -2,11 +2,12 @@ from kebab.sources import KebabSource
 
 
 class Field:
-    def __init__(self, config_name='.', default_value=None, required=False, expected_type=None):
+    def __init__(self, config_name='.', default_value=None, required=False, expected_type=None, masked=False):
         self.config_name = config_name
         self.default_value = default_value
         self.required = required
         self.expected_type = expected_type
+        self.masked = masked
 
 
 def kebab_config(auto_repr=False):

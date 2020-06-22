@@ -28,9 +28,9 @@ class S3Handler(BaseHandler):
         bucket_name = req.host
 
         if key_name is None:
-            raise URLError('no such resource: {}'.format(req.get_full_url()))
+            raise URLError('No such resource: {}'.format(req.get_full_url()))
         if not bucket_name or not key_name:
-            raise URLError('url must be in the format s3://<bucket>/<key>')
+            raise URLError('URL must be in the format s3://<bucket>/<key>')
 
         obj = self.s3.Object(bucket_name, key_name)
 

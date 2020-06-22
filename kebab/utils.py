@@ -44,9 +44,9 @@ def fill_recursively(dictionary, key, value, delimiter='.'):
                                  value=value,
                                  delimiter=delimiter)
             except KebabException:
-                raise KebabException(f"unable to inflate key {key}, not a dictionary")
+                raise KebabException(f"Unable to inflate key {key}, not a dictionary")
         else:
-            raise KebabException(f"unable to inflate key {key}, not a dictionary")
+            raise KebabException(f"Unable to inflate key {key}, not a dictionary")
 
 
 def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):

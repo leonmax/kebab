@@ -9,14 +9,15 @@ from urllib.response import addinfourl
 
 from kubernetes import client, config
 
+from kebab.exceptions import KebabException
 
 K8S_URL_PATTERN = re.compile(
-    r'k8s://%(ns)s/%(type)s/%(name)s(/%(key)s*)?' % {
-        "ns":   r"(?P<ns>[\.\w-]*)",
-        "type": r"(?P<type>\w+)",
-        "name": r"(?P<name>[\w-]+)",
-        "key":  r"(?P<key>[^\/]+)"
-    }
+    r'k8s://{ns}/{type}/{name}(/{key}*)?'.format(
+        ns=r"(?P<ns>[\.\w-]*)",
+        type=r"(?P<type>\w+)",
+        name=r"(?P<name>[\w-]+)",
+        key=r"(?P<key>[^\/]+)"
+    )
 )
 
 
@@ -25,10 +26,10 @@ class _ParsedUrl:
         self.url = url
         m = K8S_URL_PATTERN.match(url)
         if not m:
-            raise URLError('url {} is not parsable'.format(url))
-        self.resource_type = 'configmap' if m.group('type') in 'cm' else m.group('type')
+            raise URLError('URL {} is not parsable'.format(url))
+        self.resource_type = m.group('type')
         self.resource_name = m.group('name')
-        self.namespace = 'default' if m.group('ns') in ['', '.'] else m.group('ns')
+        self.namespace = 'default' if m.group('ns') in ['.', ''] else m.group('ns')
         self.key = m.group('key')
 
 
@@ -49,12 +50,12 @@ class K8SHandler(BaseHandler):
         url = req.get_full_url()
         pu = _ParsedUrl(url)
 
-        if pu.resource_type == 'secret':
+        if pu.resource_type in ['secret', 'secrets']:
             stream = self._read_secret(pu)
-        elif pu.resource_type == 'configmap':
+        elif pu.resource_type in ['cm', 'configmap', 'configmaps']:
             stream = self._read_configmap(pu)
         else:
-            raise URLError('url {} is not parsable'.format(pu.url))
+            raise URLError('URL {} is not parsable'.format(pu.url))
 
         return addinfourl(stream, [], url)
 

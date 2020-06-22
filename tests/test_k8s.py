@@ -37,8 +37,8 @@ def test_k8s_secret(opener, secret_url):
 
 
 def test_k8s_secret_with_key(opener, secret_url):
-    result = opener.open(secret_url).read()
-    assert len(result)
+    result = opener.open(f"{secret_url}/namespace").read()
+    assert result.decode("utf-8") == "default"
 
 
 def test_k8s_configmap(opener):

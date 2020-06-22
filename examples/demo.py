@@ -13,7 +13,7 @@ logging.config.dictConfig(k.subsource("logging"))
 @kebab_config(auto_repr=True)
 class DemoConfig:
     str_value = Field("ready", default_value="5", expected_type=str)
-    int_value = Field("int", required=True, expected_type=int)
+    int_value = Field("int", required=True, expected_type=int, masked=True)
 
 
 @click.command()
