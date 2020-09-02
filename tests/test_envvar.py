@@ -13,7 +13,7 @@ def env_var_map():
 
     yield {
         "XDG_CONFIG_HOME": "xdg.config_home",
-        "XDG_DATA_HOME": "xdg.data_home"
+        "XDG_DATA_HOME": "xdg.data_home",
     }
 
     # remove it when done
@@ -22,10 +22,7 @@ def env_var_map():
 
 
 def test_env_var_extension(env_var_map):
-    s = literal(
-        hello="world",
-        __env_map__=env_var_map
-    )
+    s = literal(hello="world", __env_map__=env_var_map)
 
     assert os.environ["XDG_CONFIG_HOME"] == s.get("xdg.config_home")
     assert s.get("xdg.cache_home") is None
@@ -36,7 +33,7 @@ def test_env_var_map_in_load_source(env_var_map):
     s = load_source(
         default_urls=(),
         fallback_dict={"hello": "world"},
-        env_var_map=env_var_map
+        env_var_map=env_var_map,
     )
 
     assert os.environ["XDG_CONFIG_HOME"] == s.get("xdg.config_home")

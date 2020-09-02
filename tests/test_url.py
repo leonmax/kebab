@@ -10,7 +10,7 @@ from tests.tools import mock_opener
 
 @pytest.fixture
 def file_name():
-    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as fp:
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False) as fp:
         json.dump({"name": 1}, fp)
         file_name = fp.name
     yield file_name

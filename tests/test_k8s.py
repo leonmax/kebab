@@ -7,12 +7,15 @@ from tests.tools import timed_open
 
 try:
     # noinspection PyUnresolvedReferences
-    from kubernetes import client, config
+    from kubernetes import client, config  # noqa: F401
+
     # noinspection PyUnresolvedReferences
     from kebab.k8s import K8SHandler
 except ImportError:
-    pytest.skip("Failed to import kubernetes and K8SHandler, will skip k8s test",
-                allow_module_level=True)
+    pytest.skip(
+        "Failed to import kubernetes and K8SHandler, will skip k8s test",
+        allow_module_level=True,
+    )
 
 
 @pytest.fixture

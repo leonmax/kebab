@@ -1,10 +1,12 @@
 import abc
 import copy
+import deprecation
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
 import threading
 import time
+
 # noinspection PyCompatibility,PyPackageRequirements
 from typing import List, Dict
 from urllib.request import OpenerDirector
@@ -12,7 +14,12 @@ from urllib.request import OpenerDirector
 import yaml
 
 from kebab.openers import DEFAULT_OPENER
-from kebab.utils import update_recursively, lookup_recursively, fill_recursively
+from kebab.utils import (
+    update_recursively,
+    lookup_recursively,
+    fill_recursively,
+    deprecated_alias,
+)
 
 _logger = logging.getLogger(__name__)
 _DISABLE_RELOAD = -1
@@ -33,6 +40,13 @@ class ContextExtension(object):
 
 class KebabSource(dict):
     _context_extensions = {}  # type: Dict[str, ContextExtension]
+
+    @classmethod
+    def register_extension(cls, extension):
+        if issubclass(extension, ContextExtension):
+            extension = extension()
+        if isinstance(extension, ContextExtension):
+            KebabSource._context_extensions[extension.keyword] = extension
 
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
@@ -78,14 +92,16 @@ class KebabSource(dict):
         return {}
 
     def _load_context_recursively(self):
-        _logger.debug("loading {}".format(self))
+        _logger.debug(f"loading {self}")
 
         _context = self._load_context()
 
         for keyword, extension in KebabSource._context_extensions.items():
             if keyword in _context:
                 extension_context = _context.pop(keyword)
-                _context = update_recursively(_context, extension.handle(self, extension_context))
+                _context = update_recursively(
+                    _context, extension.handle(self, extension_context)
+                )
 
         return _context
 
@@ -96,13 +112,16 @@ class KebabSource(dict):
         """
 
         :param float|int reload_interval_in_secs:
-        :param bool skip_first: if False, reload immediately, otherwise, reload after the interval
+        :param bool skip_first: if False, reload immediately, otherwise, reload after
+                                the interval
         :return:
         """
-        if (self._reload_disabled.is_set() and
-                self._reload_timer and
-                threading.current_thread().ident == self._reload_timer.ident):
-            _logger.debug("reload timer is disabled for {}".format(self))
+        if (
+            self._reload_disabled.is_set()
+            and self._reload_timer
+            and threading.current_thread().ident == self._reload_timer.ident
+        ):
+            _logger.debug(f"reload timer is disabled for {self}")
             self._reload_timer = None
             self._reload_disabled = threading.Event()
             return self
@@ -117,22 +136,30 @@ class KebabSource(dict):
                     self._cached_context = _context
                     self._last_reload_timestamp = time.time()
             except Exception as e:
-                _logger.warning("failed to reload, will use the cached value for {}\n {}".format(self, e))
+                _logger.warning(
+                    f"failed to reload, will use the cached value for {self}\n {e}"
+                )
 
         # reload periodically if reload_interval_in_secs > 0
         if reload_interval_in_secs > 0:
-            if self._reload_timer and threading.current_thread().ident != self._reload_timer.ident:
-                _logger.debug("reload timer was already set for {}".format(self))
+            if (
+                self._reload_timer
+                and threading.current_thread().ident != self._reload_timer.ident
+            ):
+                _logger.debug(f"reload timer was already set for {self}")
                 self._reload_timer.args = (reload_interval_in_secs, False)
             else:
                 if not self._reload_timer:
-                    _logger.info("setting timer to reload per {} secs for {}"
-                                 .format(reload_interval_in_secs, self))
+                    _logger.info(
+                        f"setting timer to reload per {reload_interval_in_secs} secs "
+                        f"for {self} "
+                    )
                 # noinspection PyTypeChecker
                 self._reload_timer = threading.Timer(
                     interval=reload_interval_in_secs,
                     function=self.reload,
-                    args=(reload_interval_in_secs, False))
+                    args=(reload_interval_in_secs, False),
+                )
                 self._reload_timer.setDaemon(True)
                 self._reload_timer.start()
 
@@ -148,65 +175,80 @@ class KebabSource(dict):
     def last_reload_timestamp(self):
         return self._last_reload_timestamp
 
-    def get(self,
-            config_name='.',
-            default_value=None,
-            required=False,
-            expected_type=None,
-            masked=False):
+    @deprecated_alias(default_value="default")
+    def get(
+        self,
+        config_name=".",
+        default=None,
+        required=False,
+        expected_type=None,
+        masked=False,
+    ):
         """
-        :param str config_name: The key to retrieve the config value. If '.', return the whole context
-        :param object default_value: The default value to fall back to if config_name not found
-        :param bool required: When the required value is not found, throw exception if set True, return None otherwise.
-               Default is False.
-        :param type expected_type: Expected type of the value, ignored if default_value presents.
-        :param bool masked: The value will be logged as "*" if set True. This is useful when a value is a secret.
+        :param str config_name: The key to retrieve the config value. If '.', return the
+                        whole context
+        :param object default: The default value to fall back to if config_name not
+                        found
+        :param bool required: When the required value is not found, throw exception if
+                        set True, return None otherwise.
+                        Default is False.
+        :param type expected_type: Expected type of the value, ignored if default
+                        presents.
+        :param bool masked: The value will be logged as "*" if set True. This is useful
+                        when a value is a secret.
         :rtype str|int|bool|list[str]:
 
-        Function to get a config value. This is a facade function which will retrieve all sources,
-        with the following precedence:
+        Function to get a config value. This is a facade function which will retrieve
+        all sources, with the following precedence:
             1. environment variable
             2. sources (a list of sources)
-            3. default_value, if specified
+            3. default, if specified
 
         This function will raise exception if all the below is True
             1. config_name not found
-            2. default_value not set
+            2. default not set
             3. required is True
         Otherwise, it could return None.
 
-        Note that the type of the default_value becomes the expected_type if presents,
+        Note that the type of the default becomes the expected_type if presents,
         the original expected_type will be ignored in that case.
+
+        The parameter `default_value` is deprecated, use `default` instead
         """
 
         if not config_name:
-            raise ValueError('Please specify a config_name')
+            raise ValueError("Please specify a config_name")
 
-        if default_value is not None:
-            # set expected type based on default value (and ignore the original expected_type
-            if expected_type is not None and type(default_value) != expected_type:
-                raise ValueError('You specified default_value of type {}, but expected_type={}'.format(
-                    type(default_value), expected_type))
-            expected_type = type(default_value)
+        if default is not None:
+            # set expected type based on default value (and ignore the original
+            # expected_type
+            if expected_type is not None and type(default) != expected_type:
+                raise ValueError(
+                    "You specified default of type {}, but expected_type={}".format(
+                        type(default), expected_type
+                    )
+                )
+            expected_type = type(default)
 
         # If the value is not yet set but exists in source:
-        if config_name == '.':
+        if config_name == ".":
             config_value = self._get_context()
         else:
-            config_name = config_name.lstrip('.')
-            config_value = lookup_recursively(self._get_context(),
-                                              key=config_name, default_value=default_value)
+            config_name = config_name.lstrip(".")
+            config_value = lookup_recursively(
+                self._get_context(), key=config_name, default=default
+            )
 
         # if None, give empty values
         if config_value is None:
             # fail if required
             if required:
-                raise KeyError('Missing value for {}'.format(config_name))
+                raise KeyError(f"Missing value for {config_name}")
 
         config_value = self._cast(config_value, expected_type)
 
         printed_value = "*" * len(str(config_value)) if masked else config_value
-        _logger.debug("read config: {} = {}".format(config_name, printed_value))
+        _logger.debug(f"read config: {config_name} = {printed_value}")
 
         return config_value
 
@@ -214,12 +256,14 @@ class KebabSource(dict):
     def _cast(config_value, expected_type):
         """
         Re-cast types if the config_value is not the expected_type.
-        If config_value is None, use default value of expected_type with default constructor (expected_type())
+        If config_value is None, use default value of expected_type with default
+        constructor (expected_type())
 
         ============= ============ ============
         expected_type config_value return_value
         ============= ============ ============
         not None      None         expected_type()
+        KebabConfig   not None     expected_type(literal(**config_value))
         None          None         config_value
         None          not None     config_value
         same type     same type    config_value
@@ -227,9 +271,10 @@ class KebabSource(dict):
         ============= ============ ============
 
         The exceptions:
-        1. If expected value is bool, it will only be True if the config_value (after cast to str)
-        is 'true', 'yes' and '1' (case insensitive)
-        2. If expected value is list, it will be split by list_delimiter_char (default ',') (after cast to str)
+        1. If expected value is bool, it will only be True if the config_value (after
+            cast to str) is 'true', 'yes' and '1' (case insensitive)
+        2. If expected value is list, it will be split by list_delimiter_char (default
+            ',') (after cast to str)
 
 
         :param Any config_value:
@@ -243,10 +288,12 @@ class KebabSource(dict):
                     # noinspection PyCompatibility
                     if isinstance(config_value, str):
                         v = config_value.lower()
-                        if v in ('1', 'true', 'yes', 'on', 'enable'):
+                        if v in ("1", "true", "yes", "on", "enable"):
                             return True
                         return False
                     return bool(config_value)
+                elif hasattr(expected_type, "__kebab_config__"):
+                    return expected_type(literal(**config_value))
                 else:
                     return expected_type(config_value)
         return config_value
@@ -255,8 +302,10 @@ class KebabSource(dict):
         """
         Caveats:
 
-        When parent KebabSource reloads, SubSource is not effected the updated values in KebabSource.
-        In another word, reload in SubSource is limited and is not encouraged to use at the moment.
+        When parent KebabSource reloads, SubSource is not effected the updated values in
+            KebabSource.
+        In another word, reload in SubSource is limited and is not encouraged to use at
+            the moment.
 
         :param str config_name: config_name
         :param int|float reload_interval_in_secs: same as parent param
@@ -266,12 +315,19 @@ class KebabSource(dict):
         source.reload(reload_interval_in_secs=reload_interval_in_secs)
         return source
 
+    @deprecation.deprecated(
+        deprecated_in="0.4.0",
+        removed_in="0.5.0",
+        details="Use the get function instead (with expected_type=config_class)",
+    )
     def cast(self, config_name, config_class, *args, **kwargs):
         """
         Caveats:
 
-        When parent KebabSource reloads, SubSource is not effected the updated values in KebabSource.
-        In another word, reload in SubSource is limited and is not encouraged to use at the moment.
+        When parent KebabSource reloads, SubSource is not effected the updated values in
+            KebabSource.
+        In another word, reload in SubSource is limited and is not encouraged to use at
+            the moment.
 
         :param str config_name: the config_name must be a dictionary
         :param type config_class: the config_class to cast to
@@ -298,12 +354,12 @@ class ImportExtension(ContextExtension):
                 next_context = source._load_context()
 
                 # reload other source from __import__ section
-                for url in next_context.pop('__import__', []):
+                for url in next_context.pop("__import__", []):
                     source_queue.put(UrlSource(url))
 
                 context = update_recursively(context, next_context)
             except Exception as e:
-                _logger.warning("failed to load source of {}, will skip\n{}".format(source, e))
+                _logger.warning(f"failed to load source of {source}, will skip\n{e}")
         return context
 
 
@@ -314,13 +370,21 @@ class ReloadExtension(ContextExtension):
 
     def handle(self, source, extension_context):
         try:
-            # the source can define its own reload_interval_in_secs in the __reload__ section
-            if 'reload_interval_in_secs' in extension_context:
-                reload_interval_in_secs = float(extension_context['reload_interval_in_secs'])
+            # the source can define its own reload_interval_in_secs in the __reload__
+            # section
+            if "reload_interval_in_secs" in extension_context:
+                reload_interval_in_secs = float(
+                    extension_context["reload_interval_in_secs"]
+                )
 
-                source.reload(reload_interval_in_secs=reload_interval_in_secs, skip_first=True)
+                source.reload(
+                    reload_interval_in_secs=reload_interval_in_secs,
+                    skip_first=True,
+                )
         except Exception as e:
-            _logger.warning("failed to load __reload__ section of {}, will ignore\n{}".format(self, e))
+            _logger.warning(
+                f"failed to load __reload__ section of {self}, will ignore\n{e}"
+            )
 
 
 class StrSource(KebabSource):
@@ -343,12 +407,12 @@ class UrlSource(KebabSource):
         """
         super(UrlSource, self).__init__(**kwargs)
         self._opener = opener or DEFAULT_OPENER
-        if ':' not in url:
-            url = 'file://{}'.format(os.path.abspath(url))
+        if ":" not in url:
+            url = f"file://{os.path.abspath(url)}"
         self._url = url
 
     def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, self._url)
+        return f"{self.__class__.__name__}({self._url})"
 
     def _load_context(self):
         content = self._opener.open(self._url).read()
@@ -388,10 +452,7 @@ class EnvVarSource(KebabSource, ContextExtension):
         return "__env_map__"
 
     def handle(self, source, extension_context):
-        mapped_src = EnvVarSource(
-            include_env_var=False,
-            env_var_map=extension_context
-        )
+        mapped_src = EnvVarSource(include_env_var=False, env_var_map=extension_context)
         # noinspection PyProtectedMember
         _env_context = mapped_src._load_context()
         return _env_context
@@ -399,9 +460,10 @@ class EnvVarSource(KebabSource, ContextExtension):
 
 class UnionSource(DictSource):
     """
-    this class supports __import__ and __reload__ sections
-    all file under __import__ will be combined
-    in the __reload__ section, reload_interval_in_secs will be honored for the current source
+    This class supports __import__ and __reload__ sections
+    All file under __import__ will be combined.
+    In the __reload__ section, reload_interval_in_secs will be honored for the
+    current source
     """
 
     def __init__(self, sources=None, **kwargs):
@@ -411,14 +473,17 @@ class UnionSource(DictSource):
             sources = []
         elif isinstance(sources, KebabSource):
             sources = [sources]
-        elif (not any([isinstance(sources, t) for t in (list, tuple, set)]) or
-              any([not isinstance(s, KebabSource) for s in sources])):
-            raise ValueError('Please pass in a single KebabSource or a list of KebabSource')
+        elif not any([isinstance(sources, t) for t in (list, tuple, set)]) or any(
+            [not isinstance(s, KebabSource) for s in sources]
+        ):
+            raise ValueError(
+                "Please pass in a single KebabSource or a list of KebabSource"
+            )
         self._sources = sources
 
     def __repr__(self):
         reprs = [repr(r) for r in self._sources]
-        return '{}([{}])'.format(self.__class__.__name__, ', '.join(reprs))
+        return "{}([{}])".format(self.__class__.__name__, ", ".join(reprs))
 
     def _load_context(self):
         _context = {}
@@ -434,8 +499,8 @@ class SubSource(KebabSource):
         """
         Caveats:
 
-        When parent KebabSource reloads, SubSource is not effected.
-        In another word, reload in SubSource is limited and is not encouraged to use at the moment.
+        When parent KebabSource reloads, SubSource is not effected. In another word,
+        reload in SubSource is limited and is not encouraged to use at the moment.
 
         :param KebabSource parent_source:
         :param str config_name:
@@ -445,10 +510,12 @@ class SubSource(KebabSource):
         self._source_name = config_name
 
     def __repr__(self):
-        return '{}({})'.format(self.__class__.__name__, repr(self._parent_source))
+        return f"{self.__class__.__name__}({repr(self._parent_source)})"
 
     def _load_context(self):
-        return self._parent_source.get(self._source_name, required=True, expected_type=dict)
+        return self._parent_source.get(
+            self._source_name, required=True, expected_type=dict
+        )
 
 
 def union(*sources, **kwargs):
@@ -469,9 +536,15 @@ def literal(**dictionary):
     return DictSource(dictionary=dictionary)
 
 
-def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
-                include_env_var=False, env_var_map=None, url_envvar=DEFAULT_URL_ENVVAR,
-                reload_interval_in_secs=_DISABLE_RELOAD):
+def load_source(
+    default_urls="app.yaml",
+    fallback_dict=None,
+    opener: OpenerDirector = None,
+    include_env_var=False,
+    env_var_map=None,
+    url_envvar=DEFAULT_URL_ENVVAR,
+    reload_interval_in_secs=_DISABLE_RELOAD,
+):
     """
 
     :param str|list[str]|tuple[str] default_urls:
@@ -479,32 +552,33 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
     :param OpenerDirector opener:
     :param int|float reload_interval_in_secs:
     :param bool include_env_var:
-    :param dict env_var_map: map Environment Variable key to a hierarchical key such as NESTED_KEY -> nested.key
+    :param dict env_var_map: map Environment Variable key to a hierarchical key such as
+                    NESTED_KEY -> nested.key
     :param str url_envvar: the environment variable key to load config url
     :return: the kebab source of these urls
     :rtype: KebabSource
     """
     if default_urls and isinstance(default_urls, str):
-        default_urls = default_urls.split(',')
+        default_urls = default_urls.split(",")
     urls = default_urls or []
 
     urls_from_env = os.getenv(url_envvar)
     if urls_from_env:
-        urls = urls_from_env.split(',')
+        urls = urls_from_env.split(",")
 
-    sources = [
-        UrlSource(url, opener=opener)
-        for url in urls
-    ]  # type: List[KebabSource]
+    sources = [UrlSource(url, opener=opener) for url in urls]  # type: List[KebabSource]
 
     if fallback_dict is not None and isinstance(fallback_dict, dict):
         sources.insert(0, DictSource(fallback_dict))
 
     if include_env_var or env_var_map:
-        sources.append(EnvVarSource(include_env_var=include_env_var, env_var_map=env_var_map))
+        sources.append(
+            EnvVarSource(include_env_var=include_env_var, env_var_map=env_var_map)
+        )
 
     if len(sources) == 1:
-        # for single url, do not read with union source so that self configured auto reload will work
+        # for single url, do not read with union source so that self configured auto
+        # reload will work
         source = sources[0]
     else:
         source = UnionSource(sources=sources)
@@ -512,13 +586,6 @@ def load_source(default_urls='app.yaml', fallback_dict=None, opener=None,
     return source
 
 
-def register_extension(extension):
-    if issubclass(extension, ContextExtension):
-        extension = extension()
-    if isinstance(extension, ContextExtension):
-        KebabSource._context_extensions[extension.keyword] = extension
-
-
-register_extension(ImportExtension)
-register_extension(EnvVarSource)
-register_extension(ReloadExtension)
+KebabSource.register_extension(ImportExtension)
+KebabSource.register_extension(EnvVarSource)
+KebabSource.register_extension(ReloadExtension)

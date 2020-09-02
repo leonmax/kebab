@@ -9,14 +9,13 @@ from urllib.response import addinfourl
 
 from kubernetes import client, config
 
-from kebab.exceptions import KebabException
 
 K8S_URL_PATTERN = re.compile(
-    r'k8s://{ns}/{type}/{name}(/{key}*)?'.format(
+    r"k8s://{ns}/{type}/{name}(/{key}*)?".format(
         ns=r"(?P<ns>[\.\w-]*)",
         type=r"(?P<type>\w+)",
         name=r"(?P<name>[\w-]+)",
-        key=r"(?P<key>[^\/]+)"
+        key=r"(?P<key>[^\/]+)",
     )
 )
 
@@ -26,17 +25,17 @@ class _ParsedUrl:
         self.url = url
         m = K8S_URL_PATTERN.match(url)
         if not m:
-            raise URLError('URL {} is not parsable'.format(url))
-        self.resource_type = m.group('type')
-        self.resource_name = m.group('name')
-        self.namespace = 'default' if m.group('ns') in ['.', ''] else m.group('ns')
-        self.key = m.group('key')
+            raise URLError(f"URL {url} is not parsable")
+        self.resource_type = m.group("type")
+        self.resource_name = m.group("name")
+        self.namespace = "default" if m.group("ns") in [".", ""] else m.group("ns")
+        self.key = m.group("key")
 
 
 class K8SHandler(BaseHandler):
     @staticmethod
     def get_api_client():
-        if os.getenv('KUBERNETES_SERVICE_HOST'):
+        if os.getenv("KUBERNETES_SERVICE_HOST"):
             config.load_incluster_config()
         else:
             config.load_kube_config()
@@ -50,12 +49,12 @@ class K8SHandler(BaseHandler):
         url = req.get_full_url()
         pu = _ParsedUrl(url)
 
-        if pu.resource_type in ['secret', 'secrets']:
+        if pu.resource_type in ["secret", "secrets"]:
             stream = self._read_secret(pu)
-        elif pu.resource_type in ['cm', 'configmap', 'configmaps']:
+        elif pu.resource_type in ["cm", "configmap", "configmaps"]:
             stream = self._read_configmap(pu)
         else:
-            raise URLError('URL {} is not parsable'.format(pu.url))
+            raise URLError(f"URL {pu.url} is not parsable")
 
         return addinfourl(stream, [], url)
 
@@ -71,10 +70,10 @@ class K8SHandler(BaseHandler):
         resource = self.api.read_namespaced_secret(pu.resource_name, pu.namespace)
         if pu.key:
             content = resource.data[pu.key]
-            return BytesIO(base64.b64decode(content.encode('utf8')))
+            return BytesIO(base64.b64decode(content.encode("utf8")))
         else:
             content = {
-                k: base64.b64decode(v.encode('utf8')).decode('utf8')
+                k: base64.b64decode(v.encode("utf8")).decode("utf8")
                 for k, v in resource.data.items()
             }
             return StringIO(json.dumps(content))

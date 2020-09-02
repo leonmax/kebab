@@ -1,5 +1,7 @@
 import copy
+import functools
 import logging
+import warnings
 
 from kebab.exceptions import KebabException
 
@@ -9,8 +11,8 @@ _logger = logging.getLogger(__name__)
 def update_recursively(value1, value2):
     """
     Update dictionary recursively.
-    If they are both dicts, then take the update the keys recursively (Python extend(...) function).
-    Otherwise, take the second value.
+    If they are both dicts, then take the update the keys recursively (Python
+    extend(...) function). Otherwise, take the second value.
 
     :param str|int|float|list|dict|None value1:
     :param str|int|float|list|dict|None value2:
@@ -31,7 +33,7 @@ def update_recursively(value1, value2):
         return result
 
 
-def fill_recursively(dictionary, key, value, delimiter='.'):
+def fill_recursively(dictionary, key, value, delimiter="."):
     if delimiter not in key:
         dictionary[key] = value
     else:
@@ -39,22 +41,24 @@ def fill_recursively(dictionary, key, value, delimiter='.'):
         inner_dictionary = dictionary.setdefault(next_key, {})
         if isinstance(inner_dictionary, dict):
             try:
-                fill_recursively(inner_dictionary,
-                                 key=remain_path,
-                                 value=value,
-                                 delimiter=delimiter)
+                fill_recursively(
+                    inner_dictionary,
+                    key=remain_path,
+                    value=value,
+                    delimiter=delimiter,
+                )
             except KebabException:
                 raise KebabException(f"Unable to inflate key {key}, not a dictionary")
         else:
             raise KebabException(f"Unable to inflate key {key}, not a dictionary")
 
 
-def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):
+def lookup_recursively(dictionary, key, default=None, delimiter="."):
     """
     If there is no delimiter, this is the last level in the path, return directly.
 
-    If there are more delimiters, use the first part of the key to retrieve the next level of
-    the dictionary and lookup recursively.
+    If there are more delimiters, use the first part of the key to retrieve the next
+    level of the dictionary and lookup recursively.
 
     Unless the following two situation happens:
         1. the value of current level doesn't exist
@@ -62,12 +66,12 @@ def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):
 
     :param dict dictionary:
     :param str key:
-    :param Any default_value:
+    :param Any default:
     :param str delimiter:
     """
     if delimiter not in key:
         # no more split, value supposed to be in this level
-        return dictionary.get(key, default_value)
+        return dictionary.get(key, default)
     else:
         next_key, remain_path = key.split(delimiter, 1)
         # the value of current level has to exist
@@ -76,14 +80,16 @@ def lookup_recursively(dictionary, key, default_value=None, delimiter='.'):
             # the value of current level has to be a dict
             if isinstance(inner_dictionary, dict):
                 # enter next level
-                return lookup_recursively(inner_dictionary,
-                                          key=remain_path,
-                                          default_value=default_value,
-                                          delimiter=delimiter)
-        return default_value
+                return lookup_recursively(
+                    inner_dictionary,
+                    key=remain_path,
+                    default=default,
+                    delimiter=delimiter,
+                )
+        return default
 
 
-def flatten(dictionary, path=None, delimiter='_'):
+def flatten(dictionary, path=None, delimiter="_"):
     """
     Given the dictionary, flatten it to one level (separated by underscore).
     :param dict[str, any] dictionary: the dictionary to flatten
@@ -102,3 +108,34 @@ def flatten(dictionary, path=None, delimiter='_'):
             # child_value could be either a list or str, int, unicode, float, ...
             flattened[delimiter.join(child_path)] = child_value
     return flattened
+
+
+def deprecated_alias(**aliases):
+    """
+    Create decorator which warns about deprecated parameter and swap it with new name.
+    :param aliases: key value pairs of: deprecated_name -> new_name
+    """
+
+    def deco(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            rename_kwargs(f.__name__, kwargs, aliases)
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
+
+
+def rename_kwargs(func_name, kwargs, aliases):
+    for deprecated_name, new_name in aliases.items():
+        if deprecated_name in kwargs and kwargs[deprecated_name] is not None:
+            if new_name in kwargs and kwargs[new_name] is not None:
+                raise TypeError(
+                    f"{func_name} received both {deprecated_name} and {new_name}"
+                )
+            warnings.warn(
+                f"{deprecated_name} is deprecated; use {new_name}",
+                DeprecationWarning,
+            )
+            kwargs[new_name] = kwargs.pop(deprecated_name)

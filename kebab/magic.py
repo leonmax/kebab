@@ -2,52 +2,73 @@ from kebab.sources import KebabSource
 
 
 class Field:
-    def __init__(self, config_name='.', default_value=None, required=False, expected_type=None, masked=False):
+    def __init__(
+        self,
+        config_name=".",
+        default=None,
+        required=False,
+        expected_type=None,
+        masked=False,
+        **kwargs,
+    ):
         self.config_name = config_name
-        self.default_value = default_value
+        self.default = default
         self.required = required
         self.expected_type = expected_type
         self.masked = masked
+        if "default_value" in kwargs:
+            self.default_value = kwargs.pop("default_value")
 
 
-def kebab_config(auto_repr=False):
+def _make_init(klass):
+    if hasattr(klass, "__init__"):
+        user_init = klass.__init__
+    else:
+        user_init = None
+
+    def __init__(self, source: KebabSource, *args, **kwargs):
+        if isinstance(source, KebabSource):
+            for field_name, field in vars(klass).items():
+                if isinstance(field, Field):
+                    setattr(self, field_name, source.get(**field.__dict__))
+        if user_init:
+            user_init(self, *args, **kwargs)
+
+    return __init__
+
+
+def _make_repr(klass):
+    def __repr__(self):
+        result = []
+        for key, value in vars(self).items():
+            try:
+                if not key.startswith("__") and not key.endswith("__"):
+                    #     value = getattr(self, key)
+                    result.append(f"{key}: {value!r}")
+            except AttributeError:
+                continue
+        return f'{self.__class__.__name__}({", ".join(result)})'
+
+    return __repr__
+
+
+def config(auto_repr=False):
     if not isinstance(auto_repr, bool):
-        # Most likely auto_repr here is the klass when @kebab_config is used without parameters
-        return kebab_config()(auto_repr)
+        # Most likely auto_repr here is the klass when @config is used without
+        # parameters
+        return config()(auto_repr)
 
     def _make_kebab_config_class(klass):
-        if hasattr(klass, '__init__'):
-            user_init = klass.__init__
-        else:
-            user_init = None
-
-        def __init__(self, source: KebabSource, *args, **kwargs):
-            if isinstance(source, KebabSource):
-                for field_name, field in vars(klass).items():
-                    if isinstance(field, Field):
-                        setattr(self, field_name, source.get(**field.__dict__))
-            if user_init:
-                user_init(self, *args, **kwargs)
-        setattr(klass, '__init__', __init__)
-
+        setattr(klass, "__kebab_config__", True)
+        setattr(klass, "__init__", _make_init(klass))
         if auto_repr:
-            def __repr__(self):
-                result = []
-                for key, value in vars(self).items():
-                    try:
-                        if not key.startswith("__") and not key.endswith("__"):
-                            #     value = getattr(self, key)
-                            result.append(f'{key}: {value!r}')
-                    except AttributeError:
-                        continue
-                return f'{self.__class__.__name__}({", ".join(result)})'
-            setattr(klass, '__repr__', __repr__)
-
+            setattr(klass, "__repr__", _make_repr(klass))
         return klass
+
     return _make_kebab_config_class
 
 
 class KebabConfigMeta(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
         new_cls = super(KebabConfigMeta, mcs).__new__(mcs, name, bases, namespace)
-        return kebab_config()(new_cls)
+        return config()(new_cls)

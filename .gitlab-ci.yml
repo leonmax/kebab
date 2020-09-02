@@ -8,10 +8,12 @@ stages:
   stage: test
   before_script:
     - pip install poetry
+    - poetry config virtualenvs.create false
   script:
     - poetry config virtualenvs.create false
     - poetry install --no-interaction --no-ansi
-    - pytest tests
+    - flake8
+    - pytest --cov=kebab tests
 
 3.6-slim: { extends: .test, image: 'python:3.6-slim' }
 3.7-slim: { extends: .test, image: 'python:3.7-slim' }
@@ -20,6 +22,7 @@ publish:
   stage: publish
   before_script:
     - pip install poetry
+    - poetry config virtualenvs.create false
     - export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
     - test "$CI_COMMIT_TAG" = "$VERSION"
   script:

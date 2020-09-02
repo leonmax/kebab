@@ -10,10 +10,17 @@ DEFAULT_OSS_ENDPOINT = "https://oss-cn-hangzhou.aliyuncs.com"
 
 
 class OSSHandler(BaseHandler):
-    def __init__(self, credential_provider=None, client_config=None,
-                 resolve_endpoint=True, prefer_internal_point=False):
+    def __init__(
+        self,
+        credential_provider=None,
+        client_config=None,
+        resolve_endpoint=True,
+        prefer_internal_point=False,
+    ):
         self._client_config = client_config or ClientConfig()
-        self._cred_provider = credential_provider or DefaultChainedCredentialsProvider(client_config=client_config)
+        self._cred_provider = credential_provider or DefaultChainedCredentialsProvider(
+            client_config=client_config
+        )
         self._auth = self._get_auth()
         self._resolve_endpoint = resolve_endpoint
         self._prefer_internal_point = prefer_internal_point
@@ -34,13 +41,18 @@ class OSSHandler(BaseHandler):
         # lookup endpoint in bucket_info, choose the endpoint and normalize
         with self._bucket_info_cache_lock:
             if bucket_name not in self._bucket_info_cache:
-                bucket = oss2.Bucket(self._auth, self._client_config.endpoint, bucket_name)
+                bucket = oss2.Bucket(
+                    self._auth, self._client_config.endpoint, bucket_name
+                )
                 bucket_info = bucket.get_bucket_info()
                 self._bucket_info_cache[bucket_name] = bucket_info
 
         bucket_info = self._bucket_info_cache[bucket_name]
-        return self._normalize_endpoint(bucket_info.internal_endpoint if self._prefer_internal_point else
-                                        bucket_info.extranet_endpoint)
+        return self._normalize_endpoint(
+            bucket_info.internal_endpoint
+            if self._prefer_internal_point
+            else bucket_info.extranet_endpoint
+        )
 
     @staticmethod
     def _normalize_endpoint(endpoint):
@@ -50,8 +62,8 @@ class OSSHandler(BaseHandler):
         :return:
         """
         endpoint = endpoint.strip()
-        if not endpoint.startswith('http://') and not endpoint.startswith('https://'):
-            return 'https://' + endpoint
+        if not endpoint.startswith("http://") and not endpoint.startswith("https://"):
+            return "https://" + endpoint
         else:
             return endpoint
 
@@ -60,13 +72,13 @@ class OSSHandler(BaseHandler):
             selector = req.selector
         except AttributeError:
             selector = req.get_selector()
-        key_name = selector.lstrip('/')
+        key_name = selector.lstrip("/")
         bucket_name = req.host
 
         if key_name is None:
-            raise URLError('no such resource: {}'.format(req.get_full_url()))
+            raise URLError(f"No such resource: {req.get_full_url()}")
         if not bucket_name or not key_name:
-            raise URLError('url must be in the format oss://<bucket>/<key>')
+            raise URLError("URL must be in the format oss://<bucket>/<key>")
 
         endpoint = self._resolve_bucket_endpoint(bucket_name)
         bucket = oss2.Bucket(self._auth, endpoint, bucket_name)

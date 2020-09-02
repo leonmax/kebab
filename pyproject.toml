@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.2.6"
+version = "0.4.0"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [
@@ -9,12 +9,14 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-pyyaml = "^5.1"
+pyyaml = "^5.3.1"
 click = "^7.1.2"
 boto3 = { version = "^1.13.12", optional = true }
+deprecation = "^2.1.0"
 oss2 = { version = "^2.11.0", optional = true }
 alibaba-cloud-python-sdk-v2 = { version = "^1.0.6", optional = true }
-kubernetes = { version = "^11.0.0", optional = true }
+kubernetes = { version = "^12.0.0a1", optional = true }
+pytest-black = "^0.3.10"
 
 [tool.poetry.extras]
 k8s = ["kubernetes"]
@@ -22,12 +24,21 @@ aws = ["boto3"]
 ali = ["oss2", "alibaba-cloud-python-sdk-v2"]
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.4.3"
-pytest-cov = "^2.10.0"
+pytest = "^6.0.1"
+pytest-cov = "^2.10.1"
 mock = "^4.0.2"
+black = { version = "*", allow-prereleases = true }
+flake8 = "^3.8.3"
+flake8-black = "^0.2.1"
 
 [tool.poetry.scripts]
 kebab = 'kebab.cli:run'
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [build-system]
 requires = ["poetry>=1.0.0"]

@@ -1,10 +1,17 @@
 import threading
 
 from kebab.sources import (
-    DictSource, EnvVarSource, KebabSource, UnionSource, UrlSource, StrSource,
-    literal, union, load_source
+    DictSource,
+    EnvVarSource,
+    KebabSource,
+    UnionSource,
+    UrlSource,
+    StrSource,
+    literal,
+    union,
+    load_source,
 )
-from kebab.magic import kebab_config, Field
+from kebab.magic import config, Field
 
 
 # region default_source function for convenience.
@@ -22,11 +29,22 @@ def default_source():
         if _CONF is None:
             _CONF = load_source()
     return _CONF
+
+
 # endregion
 
 
 __all__ = [
-    "DictSource", "EnvVarSource", "KebabSource", "UnionSource", "UrlSource", "StrSource", "Field",
-    "kebab_config", "literal", "union", "load_source", "default_source"
+    "DictSource",
+    "EnvVarSource",
+    "KebabSource",
+    "UnionSource",
+    "UrlSource",
+    "StrSource",
+    "Field",
+    "config",
+    "literal",
+    "union",
+    "load_source",
+    "default_source",
 ]
-
