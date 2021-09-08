@@ -4,7 +4,7 @@ from kebab.sources import KebabSource
 class Field:
     def __init__(
         self,
-        config_name=".",
+        config_name=None,
         default=None,
         required=False,
         expected_type=None,
@@ -30,6 +30,9 @@ def _make_init(klass):
         if isinstance(source, KebabSource):
             for field_name, field in vars(klass).items():
                 if isinstance(field, Field):
+                    # use config_name as default name
+                    if not field.config_name:
+                        field.config_name = field_name
                     setattr(self, field_name, source.get(**field.__dict__))
         if user_init:
             user_init(self, *args, **kwargs)
