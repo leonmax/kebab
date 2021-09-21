@@ -4,6 +4,12 @@ from kebab import literal, config
 from kebab.magic import KebabConfigMeta, Field
 
 
+@config
+class NestedConfig:
+    field_name_same_as_key_name = Field(required=True)
+
+
+# noinspection DuplicatedCode
 class CustomConfig(metaclass=KebabConfigMeta):
     required_key = Field("simple", required=True)
     auto_cast_key = Field("auto_cast", expected_type=int)
@@ -11,8 +17,10 @@ class CustomConfig(metaclass=KebabConfigMeta):
     nonexist_with_default = Field("nonexist1", default=1)
     nonexist_no_default = Field("nonexist2")
     nested_key = Field("layer1.layer2")
+    nested_config = Field(expected_type=NestedConfig)
 
 
+# noinspection DuplicatedCode
 @config
 class CustomConfig2:
     required_key = Field("simple", required=True)
@@ -21,11 +29,19 @@ class CustomConfig2:
     nonexist_with_default = Field("nonexist1", default=1)
     nonexist_no_default = Field("nonexist2")
     nested_key = Field("layer1.layer2")
+    nested_config = Field(expected_type=NestedConfig)
 
 
 @pytest.fixture
 def source():
-    return literal(simple="a great news", auto_cast="20", layer1={"layer2": 100})
+    return literal(
+        simple="a great news",
+        auto_cast="20",
+        layer1={"layer2": 100},
+        nested_config={
+            "field_name_same_as_key_name": "we need nesting"
+        }
+    )
 
 
 def _assert_conf(conf):
@@ -37,6 +53,8 @@ def _assert_conf(conf):
     # non exist without default
     assert conf.nonexist_no_default is None
     assert conf.nested_key == 100
+
+    assert conf.nested_config.field_name_same_as_key_name == "we need nesting"
 
 
 # noinspection PyArgumentList
@@ -54,7 +72,7 @@ def test_cast(source):
 
 @config(auto_repr=True)
 class CustomConfig3:
-    nested_config = Field("nested_config", expected_type=CustomConfig)
+    nested_config = Field(expected_type=CustomConfig)
 
 
 @pytest.fixture
