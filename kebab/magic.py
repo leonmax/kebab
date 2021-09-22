@@ -1,4 +1,4 @@
-from kebab.sources import KebabSource
+from kebab.sources import KebabSource, literal
 
 
 class Field:
@@ -26,7 +26,8 @@ def _make_init(klass):
     else:
         user_init = None
 
-    def __init__(self, source: KebabSource, *args, **kwargs):
+    def __init__(self, source: KebabSource = None, *args, **kwargs):
+        source = source or literal()
         if isinstance(source, KebabSource):
             for field_name, field in vars(klass).items():
                 if isinstance(field, Field):
