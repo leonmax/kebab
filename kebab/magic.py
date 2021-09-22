@@ -27,6 +27,8 @@ def _make_init(klass):
         user_init = None
 
     def __init__(self, source: KebabSource, *args, **kwargs):
+        if not source:
+            source = literal()
         if isinstance(source, KebabSource):
             for field_name, field in vars(klass).items():
                 if isinstance(field, Field):
