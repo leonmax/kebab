@@ -38,9 +38,7 @@ def source():
         simple="a great news",
         auto_cast="20",
         layer1={"layer2": 100},
-        nested_config={
-            "field_name_same_as_key_name": "we need nesting"
-        }
+        nested_config={"field_name_same_as_key_name": "we need nesting"},
     )
 
 

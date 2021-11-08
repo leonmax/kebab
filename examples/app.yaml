@@ -1,22 +1,13 @@
-logging:
-  version: 1
-  handlers:
-    console:
-      class: logging.StreamHandler
-      stream: ext://sys.stdout
-  loggers:
-    kebab.sources:
-      level: DEBUG
-      handlers: [console]
-
 demo:
   ready: 1
   int: "123b"
 
 __import__:
   - app2.yaml
+  - logging.yaml
 
 __env_map__:
   USER: sys.user
   HOME: sys.home
   VIRTUAL_ENV: py.venv
+  POETRY_ACTIVE: py.poetry_active

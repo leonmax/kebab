@@ -1,6 +1,5 @@
 import abc
 import copy
-import deprecation
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
@@ -11,8 +10,11 @@ import time
 from typing import List, Dict
 from urllib.request import OpenerDirector
 
+import deprecation
 import yaml
+from pydantic import BaseModel
 
+from kebab.constants import DEFAULT_URL_ENVVAR, DISABLE_RELOAD
 from kebab.openers import DEFAULT_OPENER
 from kebab.utils import (
     update_recursively,
@@ -21,10 +23,8 @@ from kebab.utils import (
     deprecated_alias,
 )
 
-_logger = logging.getLogger(__name__)
-_DISABLE_RELOAD = -1
 
-DEFAULT_URL_ENVVAR = "CONF_URL"
+_logger = logging.getLogger(__name__)
 
 
 class ContextExtension(object):
@@ -108,7 +108,7 @@ class KebabSource(dict):
     def disable_reload(self):
         self._reload_disabled.set()
 
-    def reload(self, reload_interval_in_secs=_DISABLE_RELOAD, skip_first=False):
+    def reload(self, reload_interval_in_secs=DISABLE_RELOAD, skip_first=False):
         """
 
         :param float|int reload_interval_in_secs:
@@ -294,11 +294,13 @@ class KebabSource(dict):
                     return bool(config_value)
                 elif hasattr(expected_type, "__kebab_config__"):
                     return expected_type(literal(**config_value))
+                elif issubclass(expected_type, BaseModel):
+                    return expected_type(**config_value)
                 else:
                     return expected_type(config_value)
         return config_value
 
-    def subsource(self, config_name, reload_interval_in_secs=_DISABLE_RELOAD):
+    def subsource(self, config_name, reload_interval_in_secs=DISABLE_RELOAD):
         """
         Caveats:
 
@@ -543,7 +545,7 @@ def load_source(
     include_env_var=False,
     env_var_map=None,
     url_envvar=DEFAULT_URL_ENVVAR,
-    reload_interval_in_secs=_DISABLE_RELOAD,
+    reload_interval_in_secs=DISABLE_RELOAD,
 ):
     """
 

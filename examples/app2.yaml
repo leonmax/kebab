@@ -1,6 +1,9 @@
 demo:
   ready: 10
   int: "456"
+  nested:
+    name: awesome
+    desc: kebab is flexible
 
 __reload__:
   reload_interval_in_secs: .5
