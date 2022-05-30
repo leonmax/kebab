@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.5.0"
+version = "0.5.1"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [
@@ -9,17 +9,17 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-click = "^7.1.2"
+click = "^8.1.3"
 deprecation = "^2.1.0"
-pydantic = "^1.8.2"
-pyyaml = "^5.3.1"
+pydantic = "^1.9.1"
+pyyaml = "^6.0"
 # aws
-boto3 = { version = "^1.13.12", optional = true }
+boto3 = { version = "^1.23.10", optional = true }
 # ali
-oss2 = { version = "^2.11.0", optional = true }
+oss2 = { version = "^2.15.0", optional = true }
 alibaba-cloud-python-sdk-v2 = { version = "^1.0.6", optional = true }
 # k8s
-kubernetes = { version = "^12.0.0a1", optional = true }
+kubernetes = { version = "^23.6.0", optional = true }
 
 [tool.poetry.extras]
 k8s = ["kubernetes"]
@@ -27,13 +27,13 @@ aws = ["boto3"]
 ali = ["oss2", "alibaba-cloud-p qython-sdk-v2"]
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.0.1"
-pytest-cov = "^2.10.1"
-pytest-black = "^0.3.10"
-mock = "^4.0.2"
+pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
+pytest-black = "^0.3.12"
+mock = "^4.0.3"
 black = { version = "*", allow-prereleases = true }
-flake8 = "^3.8.3"
-flake8-black = "^0.2.1"
+flake8 = "^4.0.1"
+flake8-black = "^0.3.3"
 
 [tool.poetry.scripts]
 kebab = 'kebab.cli:run'
