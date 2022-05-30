@@ -667,7 +667,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [extras]
-ali = ["oss2"]
+ali = ["oss2", "alibaba-cloud-python-sdk-v2"]
 aws = ["boto3"]
 k8s = ["kubernetes"]
 
