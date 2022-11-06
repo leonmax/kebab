@@ -77,6 +77,13 @@ def test_k8s_configmap(opener):
     assert "kubeconfig" in result
 
 
+def test_k8s_configmap_with_dot(opener):
+    url = "k8s://./configmap/kube-root-ca.crt/ca.crt"
+
+    result = opener.open(url).read()
+    assert "CERTIFICATE" in result
+
+
 def test_k8s_configmap_with_key(opener):
     url = "k8s://kube-public/cm/cluster-info/kubeconfig"
 

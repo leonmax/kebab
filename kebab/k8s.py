@@ -15,7 +15,7 @@ K8S_URL_PATTERN = re.compile(
     r"k8s://{ns}/{type}/{name}(/{key}*)?".format(
         ns=r"(?P<ns>[\.\w-]*)",
         type=r"(?P<type>\w+)",
-        name=r"(?P<name>[\w-]+)",
+        name=r"(?P<name>[\w._-]+)",
         key=r"(?P<key>[^\/]+)",
     )
 )
