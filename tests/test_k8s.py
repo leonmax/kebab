@@ -1,4 +1,6 @@
+import base64
 from concurrent.futures.thread import ThreadPoolExecutor
+from typing import Dict
 from urllib.request import build_opener
 
 import pytest
@@ -31,7 +33,31 @@ def secret_url():
         secret_name = secret.metadata.name
 
         if secret_name.startswith("default-token-"):
-            return f"k8s://{namespace}/secret/{secret_name}"
+            yield f"k8s://{namespace}/secret/{secret_name}"
+            return
+
+    secret_name = "default-token-kebabtest"
+    api.create_namespaced_secret(namespace, _create_secret(secret_name))
+    yield f"k8s://{namespace}/secret/{secret_name}"
+    api.delete_namespaced_secret(secret_name, namespace)
+
+
+def _create_secret(secret_name):
+    def _b64(content: Dict[str, str]):
+        return {
+            k: base64.b64encode(v.encode("utf8")).decode("utf8")
+            for k, v in content.items()
+        }
+    body = client.V1Secret()
+    body.api_version = 'v1'
+    body.kind = 'Secret'
+    body.type = 'Opaque'
+    body.metadata = {'name': secret_name}
+    body.data = _b64({
+        'token': "fake_token",
+        'namespace': "default"
+    })
+    return body
 
 
 def test_k8s_secret(opener, secret_url):

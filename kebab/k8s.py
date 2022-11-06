@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import re
+import threading
 from io import StringIO, BytesIO
 from urllib.error import URLError
 from urllib.request import BaseHandler
@@ -42,10 +43,19 @@ class K8SHandler(BaseHandler):
 
         return client.CoreV1Api()
 
+    @property
+    def api(self):
+        with self._lock:
+            if self._api is None:
+                self._api = K8SHandler.get_api_client()
+        return self._api
+
     def __init__(self):
-        self.api = self.get_api_client()
+        self._lock = threading.Lock()
+        self._api = None
 
     def k8s_open(self, req):
+
         url = req.get_full_url()
         pu = _ParsedUrl(url)
 
