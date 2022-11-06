@@ -54,6 +54,17 @@ def fill_recursively(dictionary, key, value, delimiter="."):
             raise KebabException(f"Unable to inflate key {key}, not a dictionary")
 
 
+def _unescape(next_key, remain_path):
+    def _unescape(next_key, remain_path, escape):
+        if escape in next_key and escape in remain_path:
+            next_key_half, remain_path = remain_path.split(escape)
+            next_key = f"{next_key}.{next_key_half}"
+        return next_key.strip(escape), remain_path
+    next_key, remain_path = _unescape(next_key, remain_path, "'")
+    next_key, remain_path = _unescape(next_key, remain_path, "\"")
+    return next_key, remain_path
+
+
 def lookup_recursively(dictionary, key, default=None, delimiter="."):
     """
     If there is no delimiter, this is the last level in the path, return directly.
@@ -76,6 +87,7 @@ def lookup_recursively(dictionary, key, default=None, delimiter="."):
     else:
         next_key, remain_path = key.split(delimiter, 1)
         # the value of current level has to exist
+        next_key, remain_path = _unescape(next_key, remain_path)
         if next_key in dictionary:
             inner_dictionary = dictionary.get(next_key)
             # the value of current level has to be a dict
@@ -87,6 +99,8 @@ def lookup_recursively(dictionary, key, default=None, delimiter="."):
                     default=default,
                     delimiter=delimiter,
                 )
+            elif isinstance(inner_dictionary, str):
+                return inner_dictionary
         return default
 
 

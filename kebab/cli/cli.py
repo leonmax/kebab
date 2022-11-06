@@ -16,9 +16,10 @@ from kebab.constants import DISABLE_RELOAD
 @click.option("--env-vars/--no-env-vars", default=False)
 @click.option("-k", "--key", default=".", type=str)
 @click.option("-m", "--model-class", type=str, help="a pydantic model class")
+@click.option("-r", "--raw", is_flag=True, default=False, type=bool, help="raw output")
 @click.option("-w", "--watch", default=DISABLE_RELOAD, type=float)
 @click.option("-v", "--verbose", is_flag=True, default=False, type=bool)
-def run(sources, key, watch, model_class, verbose, env_vars):
+def run(sources, key, raw, watch, model_class, verbose, env_vars):
     if verbose:
         logging.basicConfig()
         logging.getLogger().level = logging.DEBUG
@@ -35,6 +36,8 @@ def run(sources, key, watch, model_class, verbose, env_vars):
             value = conf.get(key)
             if model_class:
                 click.echo(_get_expected_type(model_class)(**value))
+            elif raw and isinstance(value, str):
+                click.echo(value)
             else:
                 click.echo(json.dumps(value))
 

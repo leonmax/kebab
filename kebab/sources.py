@@ -234,6 +234,7 @@ class KebabSource(dict):
         if config_name == ".":
             config_value = self._get_context()
         else:
+            config_name = config_name.strip("'")
             config_name = config_name.lstrip(".")
             config_value = lookup_recursively(
                 self._get_context(), key=config_name, default=default
