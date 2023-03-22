@@ -4,6 +4,8 @@ from typing import Dict
 
 import yaml
 
+from kebab.exceptions import KebabException
+
 
 class YamlLoader:
     # noinspection PyMethodMayBeStatic

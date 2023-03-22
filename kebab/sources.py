@@ -5,12 +5,12 @@ import os
 import queue  # using python-future for 2/3 compatibility
 import threading
 import time
-
 # noinspection PyCompatibility,PyPackageRequirements
 from typing import List, Dict
 from urllib.request import OpenerDirector
 
 import deprecation
+# noinspection PyPackageRequirements
 import yaml
 from pydantic import BaseModel
 
@@ -160,7 +160,7 @@ class KebabSource(dict):
                     function=self.reload,
                     args=(reload_interval_in_secs, False),
                 )
-                self._reload_timer.setDaemon(True)
+                self._reload_timer.daemon = True
                 self._reload_timer.start()
 
         return self
