@@ -410,7 +410,7 @@ class UrlSource(KebabSource):
         super(UrlSource, self).__init__(**kwargs)
         self._opener = opener or DEFAULT_OPENER
         if ":" not in url:
-            url = f"file://{os.path.abspath(url)}"
+            url = f"file://{os.path.abspath(os.path.expanduser(url))}"
         self._url = url
 
     def __repr__(self):
