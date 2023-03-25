@@ -3,7 +3,7 @@ import logging
 import pytest
 from mock import patch
 
-from kebab import literal, config, Field
+from kebab import literal, config, Field, UrlSource
 
 
 @pytest.fixture
@@ -78,3 +78,8 @@ def test_cast(source2):
     demo_config = source2.cast(".", DemoConfig)
     assert demo_config.field_two == "today"
     assert demo_config.field_three.sub_field_two == "inside"
+
+
+def test_str_source():
+    source = UrlSource("tests/data/conf2.json")
+    assert source.get("string_field") == "better value"
