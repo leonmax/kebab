@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.5.7"
+version = "0.5.8"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [
@@ -45,5 +45,5 @@ testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [build-system]
-requires = ["poetry>=1.0.0"]
+requires = ["poetry>=1.4.0"]
 build-backend = "poetry.masonry.api"
