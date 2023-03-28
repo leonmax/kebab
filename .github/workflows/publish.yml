@@ -6,13 +6,12 @@ on:
       - created
 
 jobs:
-  build-n-test:
-    needs: linting
+  publish:
     strategy:
       fail-fast: true
       matrix:
-        python: [3.7, 3.8, 3.9, 3.10, 3.11]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.7"]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -25,7 +24,7 @@ jobs:
             poetry-version: 1.4.1
       - name: Publish
         run: |
-          poetry config pypi-token.pypi $PYPI_TOKEN
+          poetry config pypi-token.pypi "${{ secrets.PYPI_TOKEN }}"
           export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
-          test ${{ env.GITHUB_REF }} = "$VERSION"
+          test "$GITHUB_REF_NAME" = "$VERSION"
           poetry publish --build
