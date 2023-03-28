@@ -1,5 +1,7 @@
 {
   "string_field": "good value",
+  "int_field": 100,
+
 
   "__import__": [
     "tests/data/conf1.yaml"

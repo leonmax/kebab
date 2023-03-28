@@ -6,16 +6,15 @@ import queue  # using python-future for 2/3 compatibility
 import threading
 import time
 # noinspection PyCompatibility,PyPackageRequirements
-from typing import List, Dict, Callable
+from typing import List, Dict
 from urllib.request import OpenerDirector
 
 import deprecation
 # noinspection PyPackageRequirements
-import yaml
 from pydantic import BaseModel
 
 from kebab.constants import DEFAULT_URL_ENVVAR, DISABLE_RELOAD
-from kebab.loader import Context, YamlLoader, StrLoader
+from kebab.loader import YamlLoader, StrLoader
 from kebab.openers import DEFAULT_OPENER
 from kebab.utils import (
     update_recursively,
