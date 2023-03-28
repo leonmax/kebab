@@ -3,7 +3,7 @@ import logging
 import pytest
 from mock import patch
 
-from kebab import literal, config, Field
+from kebab import literal, config, Field, UrlSource
 
 
 @pytest.fixture
@@ -78,3 +78,13 @@ def test_cast(source2):
     demo_config = source2.cast(".", DemoConfig)
     assert demo_config.field_two == "today"
     assert demo_config.field_three.sub_field_two == "inside"
+
+
+def test_url_source():
+    """
+    string_field imported in conf1.yaml overwritten the key in conf2.json
+    """
+    source = UrlSource("tests/data/conf2.json")
+    assert source.get("string_field") == "better value"
+    assert source.get("int_field") == 100
+    assert source.get("int_field", expected_type=str) == "100"

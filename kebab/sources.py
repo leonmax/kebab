@@ -11,10 +11,10 @@ from urllib.request import OpenerDirector
 
 import deprecation
 # noinspection PyPackageRequirements
-import yaml
 from pydantic import BaseModel
 
 from kebab.constants import DEFAULT_URL_ENVVAR, DISABLE_RELOAD
+from kebab.loader import YamlLoader, StrLoader
 from kebab.openers import DEFAULT_OPENER
 from kebab.utils import (
     update_recursively,
@@ -48,6 +48,14 @@ class KebabSource(dict):
         if isinstance(extension, ContextExtension):
             KebabSource._context_extensions[extension.keyword] = extension
 
+    @property
+    def str_loader(self, ) -> StrLoader:
+        return self._str_loader
+
+    @str_loader.setter
+    def str_loader(self, loader):
+        self._str_loader = loader
+
     def __init__(self, **kwargs):
         # Variables for sources reload (first load is also a reload).
         super(KebabSource, self).__init__(**kwargs)
@@ -56,6 +64,7 @@ class KebabSource(dict):
         self._reload_timer = None
         self._reload_disabled = threading.Event()
         self._cached_context = {}
+        self._str_loader = YamlLoader()
 
     def __repr__(self):
         return self.__class__.__name__
@@ -399,7 +408,7 @@ class StrSource(KebabSource):
         self._content = content
 
     def _load_context(self):
-        return yaml.safe_load(self._content)
+        return self.str_loader.load(self._content)
 
 
 class UrlSource(KebabSource):
@@ -418,7 +427,7 @@ class UrlSource(KebabSource):
 
     def _load_context(self):
         content = self._opener.open(self._url).read()
-        return yaml.safe_load(content)
+        return self.str_loader.load(content)
 
 
 class DictSource(KebabSource):
