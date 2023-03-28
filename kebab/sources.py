@@ -5,8 +5,7 @@ import os
 import queue  # using python-future for 2/3 compatibility
 import threading
 import time
-# noinspection PyCompatibility,PyPackageRequirements
-from typing import List, Dict
+from typing import Any, List, Dict
 from urllib.request import OpenerDirector
 
 import deprecation
@@ -39,7 +38,7 @@ class ContextExtension(object):
 
 
 class KebabSource(dict):
-    _context_extensions = {}  # type: Dict[str, ContextExtension]
+    _context_extensions: Dict[str, ContextExtension] = {}
 
     @classmethod
     def register_extension(cls, extension):
@@ -262,6 +261,15 @@ class KebabSource(dict):
         return config_value
 
     @staticmethod
+    def _cast_bool(config_value: Any) -> bool:
+        if isinstance(config_value, str):
+            v = config_value.lower()
+            if v in ("1", "true", "yes", "on", "enable"):
+                return True
+            return False
+        return bool(config_value)
+
+    @staticmethod
     def _cast(config_value, expected_type):
         """
         Re-cast types if the config_value is not the expected_type.
@@ -281,7 +289,7 @@ class KebabSource(dict):
 
         The exceptions:
         1. If expected value is bool, it will only be True if the config_value (after
-            cast to str) is 'true', 'yes' and '1' (case insensitive)
+            cast to str) is 'true', 'yes' and '1' (case-insensitive)
         2. If expected value is list, it will be split by list_delimiter_char (default
             ',') (after cast to str)
 
@@ -294,13 +302,7 @@ class KebabSource(dict):
                 return expected_type()
             elif not isinstance(config_value, expected_type):
                 if expected_type == bool:
-                    # noinspection PyCompatibility
-                    if isinstance(config_value, str):
-                        v = config_value.lower()
-                        if v in ("1", "true", "yes", "on", "enable"):
-                            return True
-                        return False
-                    return bool(config_value)
+                    return KebabSource._cast_bool(config_value)
                 elif hasattr(expected_type, "__kebab_config__"):
                     return expected_type(literal(**config_value))
                 elif issubclass(expected_type, BaseModel):
@@ -577,7 +579,7 @@ def load_source(
     if urls_from_env:
         urls = urls_from_env.split(",")
 
-    sources = [UrlSource(url, opener=opener) for url in urls]  # type: List[KebabSource]
+    sources: List[KebabSource] = [UrlSource(url, opener=opener) for url in urls]
 
     if fallback_dict is not None and isinstance(fallback_dict, dict):
         sources.insert(0, DictSource(fallback_dict))
