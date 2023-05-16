@@ -1,5 +1,5 @@
 demo:
-  ready: 10
+  ready: 5
   int: "456"
   nested:
     name: awesome

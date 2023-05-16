@@ -158,7 +158,7 @@ class KebabSource(dict):
                 self._reload_timer.args = (reload_interval_in_secs, False)
             else:
                 if not self._reload_timer:
-                    _logger.info(
+                    _logger.debug(
                         f"setting timer to reload per {reload_interval_in_secs} secs "
                         f"for {self} "
                     )

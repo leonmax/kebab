@@ -1,5 +1,6 @@
 logging:
   version: 1
+  disable_existing_loggers: false
   handlers:
     console:
       class: logging.StreamHandler
@@ -7,4 +8,7 @@ logging:
   loggers:
     kebab.sources:
       level: INFO
+    "":
+      level: INFO
       handlers: [console]
+
