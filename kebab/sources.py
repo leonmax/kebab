@@ -1,11 +1,12 @@
 import abc
 import copy
+import dataclasses
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
 import threading
 import time
-from typing import Any, List, Dict
+from typing import Any, List, Dict, get_type_hints, Type, TypeVar
 from urllib.request import OpenerDirector
 
 import deprecation
@@ -307,9 +308,24 @@ class KebabSource(dict):
                     return expected_type(literal(**config_value))
                 elif issubclass(expected_type, BaseModel):
                     return expected_type(**config_value)
+                elif dataclasses.is_dataclass(expected_type):
+                    # noinspection PyTypeChecker
+                    return KebabSource._to_dataclass(expected_type, config_value)
                 else:
                     return expected_type(config_value)
         return config_value
+
+    T = TypeVar('T')
+
+    @staticmethod
+    def _to_dataclass(data_class_type: Type[T], data: Dict[str, Any]) -> T:
+        field_types = get_type_hints(data_class_type)
+        return data_class_type(**{
+            field: KebabSource._to_dataclass(field_types[field], data[field])
+            if dataclasses.is_dataclass(field_types[field])
+            else data[field]
+            for field in data
+        })
 
     def subsource(self, config_name, reload_interval_in_secs=DISABLE_RELOAD):
         """

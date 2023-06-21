@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 import pytest
 from mock import patch
@@ -88,3 +89,23 @@ def test_url_source():
     assert source.get("string_field") == "better value"
     assert source.get("int_field") == 100
     assert source.get("int_field", expected_type=str) == "100"
+
+
+@dataclass
+class SubDataClassConfig:
+    key_four: int
+    key_five: str
+
+
+@dataclass
+class DataClassConfig:
+    key_one: int
+    key_two: str
+    key_three: SubDataClassConfig
+
+
+def test_get_dataclass(source2):
+    print(source2.get())
+    demo_config = source2.get(expected_type=DataClassConfig)
+    assert demo_config.key_two == "today"
+    assert demo_config.key_three.key_five == "inside"
