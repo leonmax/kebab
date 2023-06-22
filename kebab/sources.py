@@ -192,6 +192,7 @@ class KebabSource(dict):
         required=False,
         expected_type=None,
         masked=False,
+        update_after_reload=False
     ):
         """
         :param str config_name: The key to retrieve the config value. If '.', return the
@@ -205,6 +206,12 @@ class KebabSource(dict):
                         presents.
         :param bool masked: The value will be logged as "*" if set True. This is useful
                         when a value is a secret.
+        :param bool update_after_reload: If True, the config value will be updated to
+                        the latest after the source reload periodically. Be careful:
+                        1. this could cause performance issue if the config value is
+                        retrieved frequently.
+                        2. for primitive types, the value will not be updated.
+
         :rtype str|int|bool|list[str]:
 
         Function to get a config value. This is a facade function which will retrieve
@@ -224,14 +231,10 @@ class KebabSource(dict):
 
         The parameter `default_value` is deprecated, use `default` instead
         """
-
-        if not config_name:
-            raise ValueError("Please specify a config_name")
-
         if default is not None:
             # set expected type based on default value (and ignore the original
             # expected_type
-            if expected_type is not None and type(default) != expected_type:
+            if expected_type is not None and not isinstance(default, expected_type):
                 raise ValueError(
                     "You specified default of type {}, but expected_type={}".format(
                         type(default), expected_type
@@ -258,6 +261,28 @@ class KebabSource(dict):
 
         printed_value = "*" * len(str(config_value)) if masked else config_value
         _logger.debug(f"read config: {config_name} = {printed_value}")
+
+        if update_after_reload:
+            class KebabProxy(expected_type):
+                def __init__(self2, value):
+                    self2._value = value
+                    self2._last_eval_timestamp = time.time()
+
+                def __getattr__(self2, name):
+                    # noinspection PyProtectedMember
+                    if (
+                        name != "_last_eval_timestamp"
+                        and self2._last_eval_timestamp < self.last_reload_timestamp
+                    ):
+                        self2._value = self.get(
+                            config_name=config_name,
+                            default=default,
+                            required=required,
+                            expected_type=expected_type,
+                            masked=masked)
+                        self._last_eval_timestamp = time.time()
+                    return getattr(self2._value, name)
+            return KebabProxy(config_value)
 
         return config_value
 
@@ -327,7 +352,7 @@ class KebabSource(dict):
             for field in data
         })
 
-    def subsource(self, config_name, reload_interval_in_secs=DISABLE_RELOAD):
+    def subsource(self, config_name):
         """
         Caveats:
 
@@ -337,12 +362,9 @@ class KebabSource(dict):
             the moment.
 
         :param str config_name: config_name
-        :param int|float reload_interval_in_secs: same as parent param
         :rtype: KebabSource
         """
-        source = SubSource(self, config_name)
-        source.reload(reload_interval_in_secs=reload_interval_in_secs)
-        return source
+        return SubSource(self, config_name)
 
     @deprecation.deprecated(
         deprecated_in="0.4.0",
@@ -545,6 +567,13 @@ class SubSource(KebabSource):
         return self._parent_source.get(
             self._source_name, required=True, expected_type=dict
         )
+
+    def _get_context(self):
+        return self._load_context()
+
+    @property
+    def last_reload_timestamp(self):
+        return self._parent_source.last_reload_timestamp
 
 
 def union(*sources, **kwargs):

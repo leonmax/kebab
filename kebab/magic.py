@@ -1,3 +1,5 @@
+import time
+
 from kebab.sources import KebabSource, literal
 
 

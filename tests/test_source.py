@@ -1,10 +1,10 @@
 import logging
-from dataclasses import dataclass
 
 import pytest
 from mock import patch
 
-from kebab import literal, config, Field, UrlSource
+from kebab import literal, UrlSource
+from .tools import KebabConfig, DataConfig
 
 
 @pytest.fixture
@@ -47,19 +47,6 @@ def test_masked(logger_mock, source):
     logger_mock.assert_called_with("read config: key1 = ***")
 
 
-@config(auto_repr=True)
-class SubConfig:
-    sub_field_one = Field("key_four", required=True, expected_type=int)
-    sub_field_two = Field("key_five", required=True, expected_type=str, masked=True)
-
-
-@config(auto_repr=True)
-class DemoConfig:
-    field_one = Field("key_one", required=True, expected_type=int)
-    field_two = Field("key_two", required=True, expected_type=str, masked=True)
-    field_three = Field("key_three", required=True, expected_type=SubConfig)
-
-
 @pytest.fixture
 def source2():
     return literal(
@@ -70,13 +57,13 @@ def source2():
 
 
 def test_get_config_class(source2):
-    demo_config = source2.get(expected_type=DemoConfig)
+    demo_config = source2.get(expected_type=KebabConfig)
     assert demo_config.field_two == "today"
     assert demo_config.field_three.sub_field_two == "inside"
 
 
 def test_cast(source2):
-    demo_config = source2.cast(".", DemoConfig)
+    demo_config = source2.cast(".", KebabConfig)
     assert demo_config.field_two == "today"
     assert demo_config.field_three.sub_field_two == "inside"
 
@@ -91,21 +78,8 @@ def test_url_source():
     assert source.get("int_field", expected_type=str) == "100"
 
 
-@dataclass
-class SubDataClassConfig:
-    key_four: int
-    key_five: str
-
-
-@dataclass
-class DataClassConfig:
-    key_one: int
-    key_two: str
-    key_three: SubDataClassConfig
-
-
 def test_get_dataclass(source2):
     print(source2.get())
-    demo_config = source2.get(expected_type=DataClassConfig)
+    demo_config = source2.get(expected_type=DataConfig)
     assert demo_config.key_two == "today"
     assert demo_config.key_three.key_five == "inside"

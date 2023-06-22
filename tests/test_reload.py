@@ -1,8 +1,34 @@
+from dataclasses import dataclass
 import time
 
 from kebab.openers import DEFAULT_OPENER
 from kebab.sources import load_source, literal
 from tests.tools import mock_opener, MockHandler
+
+
+@dataclass
+class DynamicConfig:
+    dynamic: int
+
+
+def test_reload_dataclass():
+    context = {"nested": {"dynamic": 3}}
+    source = load_source(
+        default_urls="mock://",
+        opener=mock_opener(context),
+        reload_interval_in_secs=0.001,
+    ).subsource("nested")
+    dconf = source.get(expected_type=DynamicConfig, update_after_reload=True)
+    val = source.get("dynamic", expected_type=int, update_after_reload=True)
+    assert dconf.dynamic == 3
+    assert val == 3
+
+    context["nested"]["dynamic"] = 2
+    time.sleep(0.015)
+    assert source.get("dynamic") == 2
+    assert dconf.dynamic == 2
+    # primitive types are not updated
+    assert val == 3
 
 
 def test_reload():
