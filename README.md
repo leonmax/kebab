@@ -65,3 +65,10 @@ To install the extra:
 ```shell script
 pip install pykebab[ali]
 ```
+
+## Release
+```
+poetry update
+poetry version minor
+poetry publish --build
+```
