@@ -5,33 +5,47 @@ from io import StringIO
 from urllib.request import BaseHandler, build_opener
 from urllib.response import addinfourl
 
+from pydantic import BaseModel
+
 from kebab import config, Field
 
 
 @config(auto_repr=True)
 class SubKebabConfig:
-    sub_field_one = Field("key_four", required=True, expected_type=int)
-    sub_field_two = Field("key_five", required=True, expected_type=str, masked=True)
+    level = Field("level", required=True, expected_type=int)
+    renamed = Field("title", required=True, expected_type=str, masked=True)
 
 
 @config(auto_repr=True)
 class KebabConfig:
-    field_one = Field("key_one", required=True, expected_type=int)
-    field_two = Field("key_two", required=True, expected_type=str, masked=True)
-    field_three = Field("key_three", required=True, expected_type=SubKebabConfig)
+    age = Field("age", required=True, expected_type=int)
+    name = Field("name", required=True, expected_type=str, masked=True)
+    prof = Field("prof", required=True, expected_type=SubKebabConfig)
+    # nested = Field("prof", required=True, expected_type=SubKebabConfig)
 
 
 @dataclass
 class SubDataConfig:
-    key_four: int
-    key_five: str
+    level: int
+    title: str
 
 
 @dataclass
 class DataConfig:
-    key_one: int
-    key_two: str
-    key_three: SubDataConfig
+    age: int
+    name: str
+    prof: SubDataConfig
+
+
+class SubPydanticConfig(BaseModel):
+    level: int
+    title: str
+
+
+class PydanticConfig(BaseModel):
+    age: int
+    name: str
+    prof: SubPydanticConfig
 
 
 def timed_open(opener, url, i):

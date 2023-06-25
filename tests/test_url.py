@@ -18,12 +18,12 @@ def file_name():
 
 
 def test_url_with_source():
-    s = load_source(default_urls="mock://", opener=mock_opener({"name": 1}))
+    s = load_source(default_urls="mock:", opener=mock_opener({"name": 1}))
     assert s.get("name") == 1
 
 
 def test_url():
-    s = UrlSource("mock://", opener=mock_opener({"name": 1}))
+    s = UrlSource("mock:", opener=mock_opener({"name": 1}))
     assert s.get("name") == 1
 
 

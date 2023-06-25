@@ -1,20 +1,9 @@
 import logging
 
-import pytest
 from mock import patch
 
-from kebab import literal, UrlSource
+from kebab import UrlSource
 from .tools import KebabConfig, DataConfig
-
-
-@pytest.fixture
-def source():
-    return literal(
-        key1="123",
-        key2=2,
-        key3=[3.0, 4.0, 5.0],
-        key4={"nested": 1, "more": {"layer": "is better"}},
-    )
 
 
 def test_subsource(source):
@@ -47,25 +36,16 @@ def test_masked(logger_mock, source):
     logger_mock.assert_called_with("read config: key1 = ***")
 
 
-@pytest.fixture
-def source2():
-    return literal(
-        key_one="123",
-        key_two="today",
-        key_three={"key_four": 5.0, "key_five": "inside"},
-    )
+def test_get_config_class(complex_source):
+    demo_config = complex_source.get(expected_type=KebabConfig)
+    assert demo_config.name == "today"
+    assert demo_config.prof.renamed == "inside"
 
 
-def test_get_config_class(source2):
-    demo_config = source2.get(expected_type=KebabConfig)
-    assert demo_config.field_two == "today"
-    assert demo_config.field_three.sub_field_two == "inside"
-
-
-def test_cast(source2):
-    demo_config = source2.cast(".", KebabConfig)
-    assert demo_config.field_two == "today"
-    assert demo_config.field_three.sub_field_two == "inside"
+def test_cast(complex_source):
+    demo_config = complex_source.cast(".", KebabConfig)
+    assert demo_config.name == "today"
+    assert demo_config.prof.renamed == "inside"
 
 
 def test_url_source():
@@ -78,8 +58,7 @@ def test_url_source():
     assert source.get("int_field", expected_type=str) == "100"
 
 
-def test_get_dataclass(source2):
-    print(source2.get())
-    demo_config = source2.get(expected_type=DataConfig)
-    assert demo_config.key_two == "today"
-    assert demo_config.key_three.key_five == "inside"
+def test_get_dataclass(complex_source):
+    demo_config = complex_source.get(expected_type=DataConfig)
+    assert demo_config.name == "today"
+    assert demo_config.prof.title == "inside"

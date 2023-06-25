@@ -6,7 +6,7 @@ import os
 import queue  # using python-future for 2/3 compatibility
 import threading
 import time
-from typing import Any, List, Dict, get_type_hints, Type, TypeVar
+from typing import Any, List, Dict, get_type_hints, Type, TypeVar, Callable
 from urllib.request import OpenerDirector
 
 import deprecation
@@ -184,6 +184,23 @@ class KebabSource(dict):
     def last_reload_timestamp(self):
         return self._last_reload_timestamp
 
+    T = TypeVar('T')
+
+    # noinspection PyMethodParameters
+    def proxy(source, f: Callable[[], T]) -> T:
+        # not thread safe
+        class KebabProxy:
+            def __init__(self):
+                self.__value = f()
+                self.__last_eval_timestamp = time.time()
+
+            def __getattr__(self, name):
+                if self.__last_eval_timestamp < source.last_reload_timestamp:
+                    self.__value = f()
+                    self.__last_eval_timestamp = time.time()
+                return getattr(self.__value, name)
+        return KebabProxy()
+
     @deprecated_alias(default_value="default")
     def get(
         self,
@@ -231,6 +248,16 @@ class KebabSource(dict):
 
         The parameter `default_value` is deprecated, use `default` instead
         """
+        if update_after_reload and expected_type not in (
+            int, str, float, bool, type(None)
+        ):
+            return self.proxy(lambda: self.get(
+                config_name,
+                default,
+                required,
+                expected_type,
+                masked))
+
         if default is not None:
             # set expected type based on default value (and ignore the original
             # expected_type
@@ -261,28 +288,6 @@ class KebabSource(dict):
 
         printed_value = "*" * len(str(config_value)) if masked else config_value
         _logger.debug(f"read config: {config_name} = {printed_value}")
-
-        if update_after_reload:
-            class KebabProxy(expected_type):
-                def __init__(self2, value):
-                    self2._value = value
-                    self2._last_eval_timestamp = time.time()
-
-                def __getattr__(self2, name):
-                    # noinspection PyProtectedMember
-                    if (
-                        name != "_last_eval_timestamp"
-                        and self2._last_eval_timestamp < self.last_reload_timestamp
-                    ):
-                        self2._value = self.get(
-                            config_name=config_name,
-                            default=default,
-                            required=required,
-                            expected_type=expected_type,
-                            masked=masked)
-                        self._last_eval_timestamp = time.time()
-                    return getattr(self2._value, name)
-            return KebabProxy(config_value)
 
         return config_value
 
@@ -339,8 +344,6 @@ class KebabSource(dict):
                 else:
                     return expected_type(config_value)
         return config_value
-
-    T = TypeVar('T')
 
     @staticmethod
     def _to_dataclass(data_class_type: Type[T], data: Dict[str, Any]) -> T:
