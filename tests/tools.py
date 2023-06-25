@@ -21,7 +21,10 @@ class KebabConfig:
     age = Field("age", required=True, expected_type=int)
     name = Field("name", required=True, expected_type=str, masked=True)
     prof = Field("prof", required=True, expected_type=SubKebabConfig)
-    # nested = Field("prof", required=True, expected_type=SubKebabConfig)
+    nested = Field("prof", required=True, expected_type=SubKebabConfig)
+    extra: dict = Field("extra", required=False, expected_type=dict)
+    scores: list = Field("scores", required=False, expected_type=list)
+    logging: dict = Field("logging", required=False, expected_type=dict)
 
 
 @dataclass
@@ -35,6 +38,9 @@ class DataConfig:
     age: int
     name: str
     prof: SubDataConfig
+    extra: dict
+    scores: list
+    logging: dict
 
 
 class SubPydanticConfig(BaseModel):
@@ -46,6 +52,9 @@ class PydanticConfig(BaseModel):
     age: int
     name: str
     prof: SubPydanticConfig
+    extra: dict
+    scores: list
+    logging: dict
 
 
 def timed_open(opener, url, i):

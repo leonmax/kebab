@@ -21,6 +21,14 @@ def context():
         "prof": {
             "level": 3.0,
             "title": "inside"
+        },
+        "extra": {
+            "height": 1,
+            "citizen": "yes"
+        },
+        "scores": [1, 2, 3, 4, 5],
+        "logging": {
+            "version": 1
         }
     }
 

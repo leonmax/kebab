@@ -27,4 +27,3 @@ if __name__ == "__main__":
         config = src.get('demo', expected_type=DemoConfig)
         _log.info(config)
         time.sleep(1)
-

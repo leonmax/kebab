@@ -1,3 +1,4 @@
+import logging.config
 import time
 
 import pytest
@@ -24,15 +25,18 @@ def reloading(context):
 ])
 def test_reload_dataclass(reloading, context, expected_type, nested_type):
     dconf = reloading.get(expected_type=expected_type, update_after_reload=True)
-    prof = reloading.get('prof', expected_type=nested_type, update_after_reload=True)
+    prof1 = dconf.prof
+    prof2 = reloading.get('prof', expected_type=nested_type, update_after_reload=True)
     level = reloading.get("prof.level", expected_type=int, update_after_reload=True)
     assert type(level) == int
 
     # eval obj, nested obj, primitive type
-    assert dconf.prof.level == 3
-    assert prof.level == 3
+    assert prof1.level == 3
+    assert prof2.level == 3
     # primitive types are not updated
     assert level == 3
+    assert dconf.extra['height'] == 1
+    logging.config.dictConfig(dconf.logging)
 
     # change value and wait for reload
     context["prof"]["level"] = 2
@@ -40,8 +44,8 @@ def test_reload_dataclass(reloading, context, expected_type, nested_type):
     assert reloading.get("prof.level") == 2
 
     # re-eval obj, nested obj, primitive type after reload
-    assert dconf.prof.level == 2
-    assert prof.level == 2
+    assert prof1.level == 2
+    assert prof2.level == 2
     # primitive types are not updated
     assert level == 3
 
@@ -67,5 +71,5 @@ def test_reload_extension():
     assert s.get("dynamic") == 1
 
     context["dynamic"] = 2
-    time.sleep(0.015)
+    time.sleep(0.02)
     assert s.get("dynamic") == 2

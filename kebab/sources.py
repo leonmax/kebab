@@ -63,6 +63,7 @@ class KebabSource(dict):
         self._reload_lock = threading.RLock()
         self._reload_timer = None
         self._reload_disabled = threading.Event()
+        self._last_cached_timestamp = 0  # type: float
         self._cached_context = {}
         self._str_loader = YamlLoader()
 
@@ -175,8 +176,12 @@ class KebabSource(dict):
         return self
 
     def _get_context(self):
-        if not self._cached_context:
+        if (
+            not self._cached_context
+            or self._last_cached_timestamp < self.last_reload_timestamp
+        ):
             self.reload()
+            self._last_cached_timestamp = time.time()
 
         return self._cached_context
 
@@ -187,18 +192,31 @@ class KebabSource(dict):
     T = TypeVar('T')
 
     # noinspection PyMethodParameters
-    def proxy(source, f: Callable[[], T]) -> T:
+    def proxy(source, f: Callable[[], T], expected_type: Type[T]) -> T:
+        if expected_type in (
+            int, str, float, bool, list, tuple, dict, set, type(None)
+        ):
+            return f()
+
         # not thread safe
         class KebabProxy:
             def __init__(self):
                 self.__value = f()
                 self.__last_eval_timestamp = time.time()
 
-            def __getattr__(self, name):
+            def reload_if_necessary(self):
                 if self.__last_eval_timestamp < source.last_reload_timestamp:
                     self.__value = f()
                     self.__last_eval_timestamp = time.time()
-                return getattr(self.__value, name)
+
+            def __getattr__(self, name):
+                self.reload_if_necessary()
+                ret = getattr(self.__value, name)
+
+                def reloader():
+                    self.reload_if_necessary()
+                    return getattr(self.__value, name)
+                return source.proxy(reloader, type(ret))
         return KebabProxy()
 
     @deprecated_alias(default_value="default")
@@ -248,15 +266,15 @@ class KebabSource(dict):
 
         The parameter `default_value` is deprecated, use `default` instead
         """
-        if update_after_reload and expected_type not in (
-            int, str, float, bool, type(None)
-        ):
+        if update_after_reload:
+            # noinspection PyTypeChecker
             return self.proxy(lambda: self.get(
                 config_name,
                 default,
                 required,
                 expected_type,
-                masked))
+                masked
+            ), expected_type=expected_type)
 
         if default is not None:
             # set expected type based on default value (and ignore the original
@@ -546,6 +564,10 @@ class UnionSource(DictSource):
             _context = update_recursively(_context, next_context)
 
         return _context
+
+    @property
+    def last_reload_timestamp(self):
+        return max([s.last_reload_timestamp for s in self._sources])
 
 
 class SubSource(KebabSource):
