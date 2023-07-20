@@ -55,7 +55,6 @@ class K8SHandler(BaseHandler):
         self._api = None
 
     def k8s_open(self, req):
-
         url = req.get_full_url()
         pu = _ParsedUrl(url)
 

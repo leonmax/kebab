@@ -1,15 +1,14 @@
 # coding=utf-8
 import abc
 from configparser import ConfigParser
+
 # from typing import List, Dict
 
 import yaml
 
-
 # Context = Dict[str, 'Context'] | List['Context'] | str | int | float | bool | None
 
 
-# noinspection PyUnusedLocal
 class StrLoader(object):
     @abc.abstractmethod
     def load(self, content: str):

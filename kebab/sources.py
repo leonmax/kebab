@@ -10,11 +10,12 @@ from typing import Any, List, Dict, get_type_hints, Type, TypeVar, Callable
 from urllib.request import OpenerDirector
 
 import deprecation
+
 # noinspection PyPackageRequirements
 from pydantic import BaseModel
 
 from kebab.constants import DEFAULT_URL_ENVVAR, DISABLE_RELOAD
-from kebab.loader import YamlLoader, StrLoader
+from kebab.loaders import YamlLoader, StrLoader
 from kebab.openers import DEFAULT_OPENER
 from kebab.utils import (
     update_recursively,
@@ -49,7 +50,9 @@ class KebabSource(dict):
             KebabSource._context_extensions[extension.keyword] = extension
 
     @property
-    def str_loader(self, ) -> StrLoader:
+    def str_loader(
+        self,
+    ) -> StrLoader:
         return self._str_loader
 
     @str_loader.setter
@@ -63,7 +66,6 @@ class KebabSource(dict):
         self._reload_lock = threading.RLock()
         self._reload_timer = None
         self._reload_disabled = threading.Event()
-        self._last_cached_timestamp = 0  # type: float
         self._cached_context = {}
         self._str_loader = YamlLoader()
 
@@ -99,9 +101,17 @@ class KebabSource(dict):
 
     @abc.abstractmethod
     def _load_context(self):
+        """
+        Load the context from the source.
+        This method should be implemented by subclasses.
+        """
         return {}
 
     def _load_context_recursively(self):
+        """
+        Load the context from the source and recursively update the context from
+        the extensions.
+        """
         _logger.debug(f"loading {self}")
 
         _context = self._load_context()
@@ -176,12 +186,8 @@ class KebabSource(dict):
         return self
 
     def _get_context(self):
-        if (
-            not self._cached_context
-            or self._last_cached_timestamp < self.last_reload_timestamp
-        ):
+        if not self._cached_context:
             self.reload()
-            self._last_cached_timestamp = time.time()
 
         return self._cached_context
 
@@ -189,13 +195,11 @@ class KebabSource(dict):
     def last_reload_timestamp(self):
         return self._last_reload_timestamp
 
-    T = TypeVar('T')
+    T = TypeVar("T")
 
     # noinspection PyMethodParameters
     def proxy(source, f: Callable[[], T], expected_type: Type[T]) -> T:
-        if expected_type in (
-            int, str, float, bool, list, tuple, dict, set, type(None)
-        ):
+        if expected_type in (int, str, float, bool, list, tuple, dict, set, type(None)):
             return f()
 
         # not thread safe
@@ -204,19 +208,16 @@ class KebabSource(dict):
                 self.__value = f()
                 self.__last_eval_timestamp = time.time()
 
-            def reload_if_necessary(self):
+            def _reload_getattr(self, name):
                 if self.__last_eval_timestamp < source.last_reload_timestamp:
                     self.__value = f()
                     self.__last_eval_timestamp = time.time()
+                return getattr(self.__value, name)
 
             def __getattr__(self, name):
-                self.reload_if_necessary()
-                ret = getattr(self.__value, name)
+                ret = self._reload_getattr(name)
+                return source.proxy(lambda: self._reload_getattr(name), type(ret))
 
-                def reloader():
-                    self.reload_if_necessary()
-                    return getattr(self.__value, name)
-                return source.proxy(reloader, type(ret))
         return KebabProxy()
 
     @deprecated_alias(default_value="default")
@@ -227,7 +228,7 @@ class KebabSource(dict):
         required=False,
         expected_type=None,
         masked=False,
-        update_after_reload=False
+        update_after_reload=False,
     ):
         """
         :param str config_name: The key to retrieve the config value. If '.', return the
@@ -268,13 +269,10 @@ class KebabSource(dict):
         """
         if update_after_reload:
             # noinspection PyTypeChecker
-            return self.proxy(lambda: self.get(
-                config_name,
-                default,
-                required,
-                expected_type,
-                masked
-            ), expected_type=expected_type)
+            return self.proxy(
+                lambda: self.get(config_name, default, required, expected_type, masked),
+                expected_type=expected_type,
+            )
 
         if default is not None:
             # set expected type based on default value (and ignore the original
@@ -366,12 +364,14 @@ class KebabSource(dict):
     @staticmethod
     def _to_dataclass(data_class_type: Type[T], data: Dict[str, Any]) -> T:
         field_types = get_type_hints(data_class_type)
-        return data_class_type(**{
-            field: KebabSource._to_dataclass(field_types[field], data[field])
-            if dataclasses.is_dataclass(field_types[field])
-            else data[field]
-            for field in data
-        })
+        return data_class_type(
+            **{
+                field: KebabSource._to_dataclass(field_types[field], data[field])
+                if dataclasses.is_dataclass(field_types[field])
+                else data[field]
+                for field in data
+            }
+        )
 
     def subsource(self, config_name):
         """
@@ -594,6 +594,9 @@ class SubSource(KebabSource):
         )
 
     def _get_context(self):
+        """
+        SubSource never caches, relies on parent source/cache
+        """
         return self._load_context()
 
     @property
@@ -665,7 +668,7 @@ def load_source(
         source = sources[0]
     else:
         source = UnionSource(sources=sources)
-    source.reload(reload_interval_in_secs=reload_interval_in_secs)
+    source.reload(reload_interval_in_secs=reload_interval_in_secs, skip_first=True)
     return source
 
 

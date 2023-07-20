@@ -15,16 +15,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-      - name: Setup poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-            poetry-version: 1.4.1
-      - name: Publish
+      - name: Ensure version
         run: |
-          poetry config pypi-token.pypi "${{ secrets.PYPI_TOKEN }}"
           export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
           test "$GITHUB_REF_NAME" = "$VERSION"
-          poetry publish --build
+      - name: Build and publish to pypi
+        uses: JRubics/poetry-publish@v1.17
+        with:
+          python-version: ${{ matrix.python }}
+          poetry-version: 1.4.1
+          pypi_token: ${{ secrets.PYPI_TOKEN }}

@@ -48,15 +48,13 @@ def _create_secret(secret_name):
             k: base64.b64encode(v.encode("utf8")).decode("utf8")
             for k, v in content.items()
         }
+
     body = client.V1Secret()
-    body.api_version = 'v1'
-    body.kind = 'Secret'
-    body.type = 'Opaque'
-    body.metadata = {'name': secret_name}
-    body.data = _b64({
-        'token': "fake_token",
-        'namespace': "default"
-    })
+    body.api_version = "v1"
+    body.kind = "Secret"
+    body.type = "Opaque"
+    body.metadata = {"name": secret_name}
+    body.data = _b64({"token": "fake_token", "namespace": "default"})
     return body
 
 

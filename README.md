@@ -69,6 +69,8 @@ pip install pykebab[ali]
 ## Release
 ```
 poetry update
-poetry version minor
-poetry publish --build
+VERSION=`poetry version minor | rev | cut -d' ' -f 1 | rev`
+git commit -m "release $VERSION"
+git push
+gh release create --generate-notes --latest "$VERSION"
 ```

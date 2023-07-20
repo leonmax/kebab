@@ -18,18 +18,10 @@ def context():
     return {
         "age": "123",
         "name": "today",
-        "prof": {
-            "level": 3.0,
-            "title": "inside"
-        },
-        "extra": {
-            "height": 1,
-            "citizen": "yes"
-        },
+        "prof": {"level": 3.0, "title": "inside"},
+        "extra": {"height": 1, "citizen": "yes"},
         "scores": [1, 2, 3, 4, 5],
-        "logging": {
-            "version": 1
-        }
+        "logging": {"version": 1},
     }
 
 

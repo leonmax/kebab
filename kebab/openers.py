@@ -11,30 +11,10 @@ from urllib.request import (
 )
 from urllib.response import addinfourl
 
-import pkg_resources
-
 
 class _FileLikeKey(BufferedIOBase):
     def __init__(self, key):
         self.read = key.read
-
-
-class ResourceHandler(BaseHandler):
-    def __init__(self):
-        pass
-
-    # noinspection PyMethodMayBeStatic
-    def resource_open(self, req):
-        try:
-            selector = req.selector
-        except AttributeError:
-            selector = req.get_selector()
-        resource_name = selector.lstrip("/")
-        pkg_name = req.host
-
-        stream = pkg_resources.resource_stream(pkg_name, resource_name)
-
-        return addinfourl(_FileLikeKey(stream), [], req.get_full_url())
 
 
 class PythonPathHandler(BaseHandler):
@@ -65,7 +45,6 @@ handlers = [
     HTTPHandler,
     HTTPSHandler,
     PythonPathHandler,
-    ResourceHandler,
 ]
 
 try:

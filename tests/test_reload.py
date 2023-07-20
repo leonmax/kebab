@@ -5,8 +5,16 @@ import pytest
 
 from kebab.openers import DEFAULT_OPENER
 from kebab.sources import load_source, literal
-from tests.tools import mock_opener, MockHandler, DataConfig, SubDataConfig, \
-    SubKebabConfig, KebabConfig, PydanticConfig, SubPydanticConfig
+from tests.tools import (
+    mock_opener,
+    MockHandler,
+    DataConfig,
+    SubDataConfig,
+    SubKebabConfig,
+    KebabConfig,
+    PydanticConfig,
+    SubPydanticConfig,
+)
 
 
 @pytest.fixture
@@ -18,15 +26,18 @@ def reloading(context):
     )
 
 
-@pytest.mark.parametrize('expected_type,nested_type', [
-    (DataConfig, SubDataConfig),
-    (KebabConfig, SubKebabConfig),
-    (PydanticConfig, SubPydanticConfig)
-])
+@pytest.mark.parametrize(
+    "expected_type,nested_type",
+    [
+        (DataConfig, SubDataConfig),
+        (KebabConfig, SubKebabConfig),
+        (PydanticConfig, SubPydanticConfig),
+    ],
+)
 def test_reload_dataclass(reloading, context, expected_type, nested_type):
     dconf = reloading.get(expected_type=expected_type, update_after_reload=True)
     prof1 = dconf.prof
-    prof2 = reloading.get('prof', expected_type=nested_type, update_after_reload=True)
+    prof2 = reloading.get("prof", expected_type=nested_type, update_after_reload=True)
     level = reloading.get("prof.level", expected_type=int, update_after_reload=True)
     assert type(level) == int
 
@@ -35,7 +46,7 @@ def test_reload_dataclass(reloading, context, expected_type, nested_type):
     assert prof2.level == 3
     # primitive types are not updated
     assert level == 3
-    assert dconf.extra['height'] == 1
+    assert dconf.extra["height"] == 1
     logging.config.dictConfig(dconf.logging)
 
     # change value and wait for reload
@@ -60,7 +71,7 @@ def test_reload():
     assert s.get("dynamic") == 1
 
     context["dynamic"] = 2
-    time.sleep(0.015)
+    time.sleep(0.1)
     assert s.get("dynamic") == 2
 
 
@@ -71,5 +82,5 @@ def test_reload_extension():
     assert s.get("dynamic") == 1
 
     context["dynamic"] = 2
-    time.sleep(0.02)
+    time.sleep(0.1)
     assert s.get("dynamic") == 2
