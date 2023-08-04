@@ -10,22 +10,17 @@ jobs:
     uses: ./.github/workflows/build-test.yml
 
   publish:
-    strategy:
-      fail-fast: true
-      matrix:
-        python: ["3.8"]
-        os: [ubuntu-latest]
     needs: build-n-test
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Ensure version
         run: |
           export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
+          echo "git tag: $GITHUB_REF_NAME, poetry version: $VERSION"
           test "$GITHUB_REF_NAME" = "$VERSION"
       - name: Build and publish to pypi
         uses: JRubics/poetry-publish@v1.17
         with:
-          python_version: ${{ matrix.python }}
-          poetry_version: 1.4.1
           pypi_token: ${{ secrets.PYPI_TOKEN }}
+          ignore_dev_requirements: "yes"

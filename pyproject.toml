@@ -45,5 +45,5 @@ testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [build-system]
-requires = ["poetry>=1.1.12"]
+requires = ["poetry>=1.5.1"]
 build-backend = "poetry.masonry.api"
