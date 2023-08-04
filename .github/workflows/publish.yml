@@ -19,7 +19,18 @@ jobs:
           export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
           echo "git tag: $GITHUB_REF_NAME, poetry version: $VERSION"
           test "$GITHUB_REF_NAME" = "$VERSION"
-      - name: Build and publish to pypi
+
+      - name: Build and publish to TestPyPI
+        if: github.event.release.prerelease
+        uses: JRubics/poetry-publish@v1.17
+        with:
+          repository_name: "testpypi"
+          repository_url: "https://test.pypi.org/legacy/"
+          pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
+          ignore_dev_requirements: "yes"
+
+      - name: Build and publish to PyPI
+        if: "!github.event.release.prerelease"
         uses: JRubics/poetry-publish@v1.17
         with:
           pypi_token: ${{ secrets.PYPI_TOKEN }}
