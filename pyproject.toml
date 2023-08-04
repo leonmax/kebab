@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.9.1"
+version = "0.9.2"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [

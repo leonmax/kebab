@@ -1,4 +1,5 @@
 # kebab
+[![Lint and Test](https://github.com/leonmax/kebab/actions/workflows/build-test.yml/badge.svg)](https://github.com/leonmax/kebab/actions/workflows/build-test.yml)
 
 Kebab is a python configuration framework
 
