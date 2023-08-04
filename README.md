@@ -54,7 +54,7 @@ Note that all the `default-token-xxxxx`, the `xxxxx` part is dynamic for every c
 
 
 ## Alicloud support
-This extension support `oss://` url
+This extension support `s3://` url
 ### Installation
 make sure you have wheel installed, if you are not sure, install wheel with pip
 ```shell script
@@ -63,7 +63,7 @@ pip install -U wheel
 Note this is required to install the ali extra, since one of the dependency won't work directly without wheel.
 To install the extra:
 ```shell script
-pip install pykebab[ali]
+pip install pykebab[aws]
 ```
 
 ## Release

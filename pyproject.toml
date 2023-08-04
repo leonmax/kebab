@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pykebab"
-version = "0.8.2"
+version = "0.9.0"
 description = ""
 authors = ["Yangming Huang <leonmax@gmail.com>"]
 packages = [
@@ -8,19 +8,18 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8.1"
 deprecation = "^2.1.0"
 pydantic = "^2.0.3"
 # cli
 click = { version = "^8.1.5", optional = true }
 # aws
-boto3 = { version = "^1.28.3", optional = true }
+boto3 = { version = "^1.28.19", optional = true }
 # k8s
-kubernetes = { version = "^26.1.0", optional = true }
-configparser = "^5.3.0"
+kubernetes = { version = "^27.2.0", optional = true }
+configparser = "^6.0.0"
 pyyaml = "^6.0.1"
 setuptools = "^68.0.0"
-pyxdg = "^0.28"
 
 [tool.poetry.extras]
 cli = ["click"]
@@ -28,13 +27,13 @@ k8s = ["kubernetes"]
 aws = ["boto3"]
 
 [tool.poetry.dev-dependencies]
-pytest = { version = "*" }
-pytest-cov = { version = "*" }
-pytest-black = { version = "*" }
-mock = { version = "*" }
-black = { version = "*" }
-flake8 = { version = "*" }
-flake8-black = { version = "*"}
+pytest = "*"
+pytest-cov = "*"
+pytest-black = "*"
+mock = "*"
+black = "*"
+flake8 = "*"
+flake8-black = "*"
 
 [tool.poetry.scripts]
 kebab = 'kebab.cli:run'

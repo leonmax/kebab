@@ -4,10 +4,11 @@ import dataclasses
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
+import sys
 import threading
 import time
 from typing import Any, List, Dict, get_type_hints, Type, TypeVar, Callable
-from urllib.request import OpenerDirector
+from urllib.request import OpenerDirector, pathname2url
 
 import deprecation
 
@@ -479,9 +480,19 @@ class UrlSource(KebabSource):
         """
         super(UrlSource, self).__init__(**kwargs)
         self._opener = opener or DEFAULT_OPENER
-        if ":" not in url:
-            url = f"file://{os.path.abspath(os.path.expanduser(url))}"
+
+        if ":\\" in url or ":" not in url:
+            url = UrlSource._path_to_url(url)
+
         self._url = url
+
+    @staticmethod
+    def _path_to_url(path):
+        path = os.path.abspath(os.path.expanduser(path))
+        if sys.platform.startswith("win"):
+            # path = "/" + path.replace("\\", "/")
+            return f"file:{pathname2url(path)}"
+        return f"file://{path}"
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._url})"

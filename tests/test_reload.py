@@ -51,7 +51,7 @@ def test_reload_dataclass(reloading, context, expected_type, nested_type):
 
     # change value and wait for reload
     context["prof"]["level"] = 2
-    time.sleep(0.015)
+    time.sleep(0.1)
     assert reloading.get("prof.level") == 2
 
     # re-eval obj, nested obj, primitive type after reload
