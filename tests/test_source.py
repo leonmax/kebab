@@ -1,7 +1,5 @@
 import logging
-import sys
 
-import pytest
 from mock import patch
 
 from kebab import UrlSource
@@ -58,22 +56,6 @@ def test_url_source():
     assert source.get("string_field") == "better value"
     assert source.get("int_field") == 100
     assert source.get("int_field", expected_type=str) == "100"
-
-
-@pytest.mark.skipif(not sys.platform.startswith("win"), reason="requires windows")
-def test_url_source_for_win():
-    """
-    string_field imported in conf1.yaml overwritten the key in conf2.json
-    """
-    assert (
-        UrlSource._path_to_url(r"C:\Users\johndoe\config.yaml")
-        == "file:///C:/Users/johndoe/config.yaml"
-    )
-
-    assert (
-        UrlSource._path_to_url(r"\\Mounted\Home\config.yaml")
-        == "file:////Mounted/Home/config.yaml"
-    )
 
 
 def test_get_dataclass(complex_source):

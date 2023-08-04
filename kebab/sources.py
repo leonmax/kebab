@@ -4,6 +4,7 @@ import dataclasses
 import logging
 import os
 import queue  # using python-future for 2/3 compatibility
+import re
 import sys
 import threading
 import time
@@ -24,7 +25,6 @@ from kebab.utils import (
     fill_recursively,
     deprecated_alias,
 )
-
 
 _logger = logging.getLogger(__name__)
 
@@ -481,18 +481,23 @@ class UrlSource(KebabSource):
         super(UrlSource, self).__init__(**kwargs)
         self._opener = opener or DEFAULT_OPENER
 
-        if ":\\" in url or ":" not in url:
-            url = UrlSource._path_to_url(url)
-
+        url = UrlSource._path_to_url(url)
         self._url = url
 
     @staticmethod
+    def _is_path(url):
+        return ":\\" in url or not re.match(r"^\w+:.*", url)
+
+    @staticmethod
     def _path_to_url(path):
-        path = os.path.abspath(os.path.expanduser(path))
+        if not UrlSource._is_path(path):
+            return path
         if sys.platform.startswith("win"):
             # path = "/" + path.replace("\\", "/")
             return f"file:{pathname2url(path)}"
-        return f"file://{path}"
+        else:
+            path = os.path.abspath(os.path.expanduser(path))
+            return f"file://{path}"
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._url})"

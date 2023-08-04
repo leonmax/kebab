@@ -7,7 +7,7 @@ from urllib.response import addinfourl
 
 from pydantic import BaseModel
 
-from kebab import config, Field
+from kebab import config, Field, load_source
 
 
 @config(auto_repr=True)
@@ -66,15 +66,28 @@ def timed_open(opener, url, i):
     assert len(result)
 
 
-def mock_opener(dictionary):
-    return build_opener(MockHandler(dictionary))
+def mock_opener(dictionary, only_once=False):
+    return build_opener(MockFileHandler(dictionary, only_once=only_once))
 
 
-class MockHandler(BaseHandler):
-    def __init__(self, dictionary=None):
+def mock_source(dictionary, only_once=False, reload_interval_in_secs=0.001):
+    return load_source(
+        default_urls="mock:",
+        opener=mock_opener(dictionary, only_once=only_once),
+        reload_interval_in_secs=reload_interval_in_secs,
+    )
+
+
+class MockFileHandler(BaseHandler):
+    def __init__(self, dictionary=None, only_once=False):
         self._dictionary = dictionary or {}
+        self._only_once = only_once
+        self.loaded = False
 
     # noinspection PyMethodMayBeStatic
     def mock_open(self, req):
+        if self._only_once and self.loaded:
+            raise Exception("Already loaded")
+        self.loaded = True
         _content = json.dumps(self._dictionary)
         return addinfourl(StringIO(_content), [], req.get_full_url())

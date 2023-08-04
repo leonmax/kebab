@@ -4,7 +4,11 @@ name: Lint and Test
 # https://github.com/marketplace/actions/install-poetry-action
 # https://testdriven.io/tips/810f9bb5-c9df-479d-baa4-290c7e0779f1/
 
-on: [push]
+on:
+  push:
+    tags-ignore:
+      - '*'
+  workflow_call:
 
 jobs:
   linting:
@@ -29,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python: ["3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
