@@ -6,12 +6,16 @@ on:
       - created
 
 jobs:
+  build-n-test:
+    uses: ./.github/workflows/build-test.yml
+
   publish:
     strategy:
       fail-fast: true
       matrix:
         python: ["3.7"]
         os: [ubuntu-latest]
+    needs: build-n-test
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
