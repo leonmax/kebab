@@ -5,9 +5,10 @@ Kebab is a python configuration framework
 
 Features:
 - support various sources of config such as `file`, `http`, `k8s`, `oss`, `s3`, easy to expand
-- mapping to config object
+- mapping to config object, supports [`pydantic`](https://docs.pydantic.dev/latest/) and built-in [`dataclasses`](https://docs.python.org/3/library/dataclasses.html)
 - overlay multiple config, can auto-import
-- config auto-reload
+- config auto-reload based on interval
+- cli from easier debugging
 
 
 ## Kubernetes
@@ -54,7 +55,7 @@ call the above will give you the namespace
 Note that all the `default-token-xxxxx`, the `xxxxx` part is dynamic for every cluster.
 
 
-## Alicloud support
+## AWS S3 support
 This extension support `s3://` url
 ### Installation
 make sure you have wheel installed, if you are not sure, install wheel with pip
@@ -69,9 +70,6 @@ pip install pykebab[aws]
 
 ## Release
 ```
-poetry update
-VERSION=`poetry version minor | rev | cut -d' ' -f 1 | rev`
-git commit -m "release $VERSION"
-git push
-gh release create --generate-notes --latest "$VERSION"
+./release.sh minor
 ```
+
