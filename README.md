@@ -70,6 +70,6 @@ pip install pykebab[aws]
 
 ## Release
 ```
-./release.sh minor
+./release.sh [patch|minor|major|prepatch|preminor|premajor|prerelease]
 ```
 
