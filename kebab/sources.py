@@ -643,21 +643,22 @@ def literal(**dictionary):
 
 def load_source(
     default_urls="app.yaml",
-    fallback_dict=None,
-    opener: OpenerDirector = None,
-    additional_handlers=None,
-    include_env_var=False,
-    env_var_map=None,
-    url_envvar=DEFAULT_URL_ENVVAR,
-    reload_interval_in_secs=DISABLE_RELOAD,
+    fallback_dict: Dict[str, Any] = None,
+    opener: OpenerDirector = DEFAULT_OPENER,
+    extra_handlers: List[BaseHandler] = None,
+    include_env_var: bool = False,
+    env_var_map: Dict[str, str] = None,
+    url_envvar: str = DEFAULT_URL_ENVVAR,
+    reload_interval_in_secs: int = DISABLE_RELOAD,
 ):
     """
 
     :param str|list[str]|tuple[str] default_urls:
     :param dict fallback_dict:
     :param OpenerDirector opener:
-    :param int|float reload_interval_in_secs:
-    :param bool include_env_var:
+    :param list extra_handlers: a list of handlers to be added to the opener
+    :param int|float reload_interval_in_secs: the reload interval in seconds
+    :param bool include_env_var: whether to include environment variables directly
     :param dict env_var_map: map Environment Variable key to a hierarchical key such as
                     NESTED_KEY -> nested.key
     :param str url_envvar: the environment variable key to load config url
@@ -672,7 +673,7 @@ def load_source(
     if urls_from_env:
         urls = urls_from_env.split(",")
 
-    for handler in additional_handlers:
+    for handler in extra_handlers or []:
         if isinstance(handler, BaseHandler):
             opener.add_handler(handler)
 
