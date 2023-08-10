@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 from typing import Any, List, Dict, get_type_hints, Type, TypeVar, Callable
-from urllib.request import OpenerDirector, pathname2url
+from urllib.request import OpenerDirector, pathname2url, BaseHandler
 
 import deprecation
 
@@ -570,8 +570,11 @@ class UnionSource(DictSource):
         self._sources = sources
 
     def __repr__(self):
-        reprs = [repr(r) for r in self._sources]
+        reprs = self.list_sources()
         return "{}([{}])".format(self.__class__.__name__, ", ".join(reprs))
+
+    def list_sources(self):
+        return list(map(repr, self._sources))
 
     def _load_context(self):
         _context = {}
@@ -642,6 +645,7 @@ def load_source(
     default_urls="app.yaml",
     fallback_dict=None,
     opener: OpenerDirector = None,
+    additional_handlers=None,
     include_env_var=False,
     env_var_map=None,
     url_envvar=DEFAULT_URL_ENVVAR,
@@ -667,6 +671,10 @@ def load_source(
     urls_from_env = os.getenv(url_envvar)
     if urls_from_env:
         urls = urls_from_env.split(",")
+
+    for handler in additional_handlers:
+        if isinstance(handler, BaseHandler):
+            opener.add_handler(handler)
 
     sources: List[KebabSource] = [UrlSource(url, opener=opener) for url in urls]
 
