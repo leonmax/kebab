@@ -31,11 +31,11 @@ jobs:
               with:
                   repository_url: "https://test.pypi.org/legacy/"
                   pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
-                  ignore_dev_requirements: "yes"
+                  allow_poetry_pre_release: "yes"
 
             - name: Build and publish to PyPI
               if: "!github.event.release.prerelease"
               uses: JRubics/poetry-publish@v1.17
               with:
                   pypi_token: ${{ secrets.PYPI_TOKEN }}
-                  ignore_dev_requirements: "yes"
+                  allow_poetry_pre_release: "no"
