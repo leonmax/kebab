@@ -3,6 +3,7 @@ import sys
 from io import BufferedIOBase
 from urllib.error import URLError
 from urllib.request import (
+    OpenerDirector,
     build_opener,
     BaseHandler,
     FileHandler,
@@ -47,29 +48,22 @@ handlers = [
     PythonPathHandler,
 ]
 
-try:
+
+DEFAULT_OPENER = build_opener(*handlers)
+
+
+def add_k8s_handlers(opener: OpenerDirector):
     # noinspection PyUnresolvedReferences
     from . import k8s
 
-    handlers.append(k8s.K8SHandler)
-except ImportError:
-    pass
+    opener.add_handler(k8s.K8SHandler())
+    return opener
 
-try:
+
+def add_aws_handlers(opener: OpenerDirector):
     # noinspection PyUnresolvedReferences
     from . import aws
 
-    handlers.append(aws.S3Handler)
-    handlers.append(aws.SecretsManagerHandler)
-except ImportError:
-    pass
-
-try:
-    # noinspection PyUnresolvedReferences
-    from . import ali
-
-    handlers.append(ali.OSSHandler)
-except ImportError:
-    pass
-
-DEFAULT_OPENER = build_opener(*handlers)
+    opener.add_handler(aws.S3Handler())
+    opener.add_handler(aws.SecretsManagerHandler())
+    return opener

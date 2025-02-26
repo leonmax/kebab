@@ -1,36 +1,39 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types:
-      - created
+    release:
+        types:
+            - created
 
 jobs:
-  build-n-test:
-    uses: ./.github/workflows/build-test.yml
+    build-n-test:
+        uses: ./.github/workflows/build-test.yml
 
-  publish:
-    needs: build-n-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Ensure version
-        run: |
-          export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
-          echo "git tag: $GITHUB_REF_NAME, poetry version: $VERSION"
-          test "$GITHUB_REF_NAME" = "$VERSION"
+    publish:
+        permissions:
+            contents: read
+            id-token: write
+        needs: build-n-test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Ensure version
+              run: |
+                  export VERSION=`grep -e "^version" pyproject.toml | tr -d '[" ]' | cut -d= -f2`
+                  echo "git tag: $GITHUB_REF_NAME, poetry version: $VERSION"
+                  test "$GITHUB_REF_NAME" = "$VERSION"
 
-      - name: Build and publish to TestPyPI
-        if: github.event.release.prerelease
-        uses: JRubics/poetry-publish@v1.17
-        with:
-          repository_url: "https://test.pypi.org/legacy/"
-          pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
-          ignore_dev_requirements: "yes"
+            - name: Build and publish to TestPyPI
+              if: github.event.release.prerelease
+              uses: JRubics/poetry-publish@v1.17
+              with:
+                  repository_url: "https://test.pypi.org/legacy/"
+                  pypi_token: ${{ secrets.TEST_PYPI_TOKEN }}
+                  ignore_dev_requirements: "yes"
 
-      - name: Build and publish to PyPI
-        if: "!github.event.release.prerelease"
-        uses: JRubics/poetry-publish@v1.17
-        with:
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
-          ignore_dev_requirements: "yes"
+            - name: Build and publish to PyPI
+              if: !github.event.release.prerelease
+              uses: JRubics/poetry-publish@v1.17
+              with:
+                  pypi_token: ${{ secrets.PYPI_TOKEN }}
+                  ignore_dev_requirements: "yes"
