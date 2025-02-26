@@ -12,7 +12,7 @@ python = "^3.8.1"
 deprecation = "^2.1.0"
 pydantic = "^2.0.3"
 configparser = "^6.0.0"
-setuptools = "^68.0.0"
+setuptools = ">=68,<71"
 pyyaml = "^6.0.1"
 # cli
 click = { version = "^8.1.5", optional = true }
