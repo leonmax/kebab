@@ -10,6 +10,9 @@ Features:
 - config auto-reload based on interval
 - cli from easier debugging
 
+```bash
+pip install pykebab
+```
 
 ## Kubernetes
 This extension support `k8s://` url, include secret and configmap resource
@@ -18,6 +21,16 @@ This extension support `k8s://` url, include secret and configmap resource
 ```shell script
 pip install pykebab[k8s]
 ```
+
+### Add Kubernetes handler
+in your code, add the code below
+```python
+from kebab.openers import DEFAULT_OPENER, add_k8s_handlers
+add_k8s_handlers(DEFAULT_OPENER)
+```
+before using the `default_source`, `load_source`, `UrlSource`
+
+
 ### URL Pattern
 ```
 k8s://<namespace>/<resource_type>/<resource_name>[/<data_key>]
@@ -62,14 +75,21 @@ make sure you have wheel installed, if you are not sure, install wheel with pip
 ```shell script
 pip install -U wheel
 ```
-Note this is required to install the ali extra, since one of the dependency won't work directly without wheel.
+Note this is required to install the aws extra, since one of the dependency won't work directly without wheel.
 To install the extra:
 ```shell script
 pip install pykebab[aws]
 ```
+### Add S3 handler
+in your code, add the code below
+```python
+from kebab.openers import DEFAULT_OPENER, add_aws_handlers
+add_aws_handlers(DEFAULT_OPENER)
+```
+before using the `default_source`, `load_source`, `UrlSource`
+
 
 ## Release
 ```
 ./release.sh [patch|minor|major|prepatch|preminor|premajor|prerelease]
 ```
-
