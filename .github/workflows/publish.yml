@@ -34,7 +34,7 @@ jobs:
                   ignore_dev_requirements: "yes"
 
             - name: Build and publish to PyPI
-              if: !github.event.release.prerelease
+              if: "!github.event.release.prerelease"
               uses: JRubics/poetry-publish@v1.17
               with:
                   pypi_token: ${{ secrets.PYPI_TOKEN }}
